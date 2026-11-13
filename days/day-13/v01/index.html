@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Day 13 · Bored or Busy</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <style>
+    :root {
+      --bored: #ffd60a;
+      --bored-ink: #6b5500;
+      --busy: #9b5cff;
+      --busy-ink: #fff;
+      --off: #b8b8bd;
+      --sheet: rgba(255,255,255,.86);
+      --ink: #111;
+      --muted: #6e6e73;
+      --line: rgba(0,0,0,.08);
+      --chip: rgba(118,118,128,.12);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --sheet: rgba(28,28,30,.86); --ink: #f5f5f7; --muted: #98989d; --line: rgba(255,255,255,.1); --chip: rgba(118,118,128,.24); }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #e9e5dc; color: var(--ink);
+      font: 15px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    #map { position: fixed; inset: 0; }
+    .leaflet-control-attribution { font-size: 9px; }
+
+    /* ---- friend pins ---- */
+    .pin { position: relative; width: 56px; height: 56px; }
+    .pin .ring { position: absolute; inset: 0; border-radius: 50%; padding: 4px; background: var(--off);
+      box-shadow: 0 4px 14px rgba(0,0,0,.28); }
+    .pin.bored .ring { background: var(--bored); }
+    .pin.busy  .ring { background: var(--busy); }
+    .pin .face { width: 100%; height: 100%; border-radius: 50%; border: 3px solid #fff; display: grid; place-items: center;
+      font: 600 17px/1 -apple-system, system-ui, sans-serif; color: #fff; letter-spacing: -.02em; }
+    .pin.bored::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid var(--bored);
+      animation: pulse 1.8s ease-out infinite; }
+    .pin.busy::after { content: "⏳"; }
+    .pin.bored::after { content: "🙋"; }
+    .pin::after { position: absolute; right: -6px; bottom: -4px; width: 24px; height: 24px; border-radius: 50%;
+      background: #fff; display: grid; place-items: center; font-size: 13px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+    .pin.me .face { font-size: 13px; }
+    .pin.selected .ring { transform: scale(1.12); transition: transform .2s; }
+    .pin.dim { opacity: .35; filter: grayscale(.6); }
+    @keyframes pulse { from { transform: scale(.9); opacity: .9; } to { transform: scale(1.6); opacity: 0; } }
+
+    /* ---- top bar ---- */
+    .top { position: fixed; top: max(12px, env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 500;
+      display: flex; gap: 8px; align-items: center; pointer-events: none; }
+    .brand { pointer-events: auto; background: var(--sheet); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-radius: 14px; padding: 8px 12px; box-shadow: 0 2px 10px rgba(0,0,0,.12); display: flex; align-items: center; gap: 8px; }
+    .brand b { font-size: 15px; letter-spacing: -.01em; }
+    .brand .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend { margin-left: auto; pointer-events: auto; background: var(--sheet); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-radius: 14px; padding: 8px 12px; box-shadow: 0 2px 10px rgba(0,0,0,.12); display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
+    .legend span { display: flex; align-items: center; gap: 5px; }
+    .legend i { width: 12px; height: 12px; border-radius: 50%; border: 3px solid; }
+
+    /* ---- bottom sheet ---- */
+    .sheet { position: fixed; z-index: 600; left: 0; right: 0; bottom: 0; max-width: 480px; margin: 0 auto;
+      background: var(--sheet); backdrop-filter: blur(28px) saturate(1.6); -webkit-backdrop-filter: blur(28px) saturate(1.6);
+      border-radius: 22px 22px 0 0; box-shadow: 0 -6px 30px rgba(0,0,0,.18);
+      padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); max-height: 62vh; display: flex; flex-direction: column;
+      transition: max-height .3s ease; overflow: hidden; }
+    .sheet.collapsed { max-height: 205px; }
+    @media (min-width: 900px) { .sheet { left: 16px; right: auto; bottom: 16px; width: 380px; border-radius: 22px; max-height: calc(100vh - 100px); } .sheet.collapsed { max-height: calc(100vh - 100px); } }
+    .grab { width: 38px; height: 5px; border-radius: 3px; background: var(--off); opacity: .6; margin: 0 auto 10px; border: 0; padding: 0; cursor: pointer; display: block; }
+
+    .me-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .me-row h2 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
+    .me-row .sub { color: var(--muted); font-size: 13px; }
+
+    .seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; background: var(--chip); padding: 4px; border-radius: 14px; }
+    .seg button { border: 0; border-radius: 10px; padding: 10px 4px; font: 600 14px/1.1 inherit; font-family: inherit; color: var(--ink);
+      background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .seg button small { font-weight: 400; font-size: 11px; color: var(--muted); }
+    .seg button[aria-pressed="true"].bored { background: var(--bored); color: var(--bored-ink); }
+    .seg button[aria-pressed="true"].busy { background: var(--busy); color: #fff; }
+    .seg button[aria-pressed="true"].busy small { color: rgba(255,255,255,.8); }
+    .seg button[aria-pressed="true"].bored small { color: var(--bored-ink); }
+    .seg button[aria-pressed="true"].off { background: var(--sheet); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+
+    .extras { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-top: 8px; }
+    .extras input, .extras select { font: inherit; font-size: 14px; color: var(--ink); background: var(--chip); border: 0; border-radius: 10px; padding: 9px 10px; min-width: 0; }
+    .extras input::placeholder { color: var(--muted); }
+
+    .list-head { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 6px; }
+    .list-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+    .filter { font: inherit; font-size: 13px; border: 0; background: var(--chip); color: var(--ink); border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+    .filter[aria-pressed="true"] { background: var(--bored); color: var(--bored-ink); font-weight: 600; }
+
+    .friends { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; min-height: 0; }
+    .friend { display: flex; align-items: center; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--line); cursor: pointer; }
+    .friend:first-child { border-top: 0; }
+    .av { flex: none; width: 44px; height: 44px; border-radius: 50%; padding: 3px; background: var(--off); }
+    .av.bored { background: var(--bored); } .av.busy { background: var(--busy); }
+    .av div { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: 14px; }
+    .friend .info { flex: 1; min-width: 0; }
+    .friend .name { font-weight: 600; }
+    .friend .meta { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-left: 4px; vertical-align: 1px; }
+    .tag.bored { background: var(--bored); color: var(--bored-ink); }
+    .tag.busy { background: var(--busy); color: #fff; }
+    .wave { flex: none; border: 0; border-radius: 999px; padding: 7px 12px; font: 600 13px/1 inherit; font-family: inherit; cursor: pointer;
+      background: var(--bored); color: var(--bored-ink); }
+    .wave[disabled] { background: var(--chip); color: var(--muted); cursor: default; }
+    .empty { color: var(--muted); text-align: center; padding: 18px 0; font-size: 14px; }
+
+    .toast { position: fixed; z-index: 700; left: 50%; top: 70px; transform: translate(-50%, -20px); opacity: 0; pointer-events: none;
+      background: rgba(20,20,20,.88); color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px; transition: .25s; white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .leaflet-popup-content-wrapper { border-radius: 14px; }
+    .leaflet-popup-content { margin: 10px 14px; font: 14px/1.35 -apple-system, system-ui, sans-serif; }
+    .pop b { font-size: 15px; } .pop .m { color: #6e6e73; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="map" aria-label="Map of friends"></div>
+
+  <div class="top">
+    <div class="brand"><span class="dot" style="background:var(--bored)"></span><b>Bored or Busy</b></div>
+    <div class="legend">
+      <span><i style="border-color:var(--bored)"></i>Bored</span>
+      <span><i style="border-color:var(--busy)"></i>Busy</span>
+    </div>
+  </div>
+
+  <section class="sheet" id="sheet">
+    <button class="grab" id="grab" aria-label="Expand or collapse"></button>
+
+    <div class="me-row">
+      <div class="av" id="meAv"><div style="background:#1c1c1e">Me</div></div>
+      <div>
+        <h2 id="meTitle">What's your vibe?</h2>
+        <div class="sub" id="meSub">Your friends see this ring around you on the map.</div>
+      </div>
+    </div>
+
+    <div class="seg" role="group" aria-label="Your status">
+      <button class="bored" data-s="bored" aria-pressed="false">🙋 Bored<small>open to hang</small></button>
+      <button class="busy"  data-s="busy"  aria-pressed="false">⏳ Busy<small>leave me be</small></button>
+      <button class="off"   data-s="off"   aria-pressed="true">Hidden<small>no ring</small></button>
+    </div>
+    <div class="extras" id="extras" hidden>
+      <input id="note" maxlength="40" placeholder="Add a note… (down for coffee)">
+      <select id="until" aria-label="For how long">
+        <option value="60">1 hr</option>
+        <option value="120" selected>2 hrs</option>
+        <option value="240">4 hrs</option>
+        <option value="0">Until I change it</option>
+      </select>
+    </div>
+
+    <div class="list-head">
+      <h3 id="countLabel">Friends</h3>
+      <button class="filter" id="filter" aria-pressed="false">Only bored</button>
+    </div>
+    <ul class="friends" id="friends"></ul>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

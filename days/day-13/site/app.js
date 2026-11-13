@@ -200,9 +200,18 @@ if (navigator.geolocation && location.protocol === 'https:') {
     meMarker.setLatLng(center);
     FRIENDS.forEach((f) => { f.pos = [center[0] + f.d[0], center[1] + f.d[1]]; markers[f.id].setLatLng(f.pos); });
     map.setView(center, 15);
+    frame();
     renderFriends();
   }, () => {}, { timeout: 6000 });
 }
+
+// keep the map centre clear of the side panel on desktop / the sheet on phones
+function frame() {
+  if (innerWidth >= 900) map.panBy([-200, 0], { animate: false });
+  else map.panBy([0, 70], { animate: false });
+}
+if (innerWidth < 900) $('#sheet').classList.add('collapsed');
+map.whenReady(frame);
 
 renderMe();
 renderFriends();
