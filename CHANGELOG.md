@@ -3,6 +3,7 @@
 Every change to the 30 Days project, newest first. Entries are added by `./30 save`.
 
 <!-- new entries go below this line -->
+- 2026-11-12 20:54 · **Day 08** · Fit the lid snugly onto the box instead of overhanging it
 - 2026-11-12 20:53 · **Day 08** · Take the date off the cards
 - 2026-11-12 20:52 · **Day 08** · Memory Box: write a memory on an index card and slide it into a locked black metal box (button, Cmd+Enter, or drag it up to the slot); turn the key to read what's inside
 - 2026-11-12 20:27 · **Day 06** · Rename to Mani Machine with a Rubik Mono One title; use only my hands photo (no uploads) and drop the Hold: original button
