@@ -1,5 +1,5 @@
 ---
-title: Memory Box
+title: Fran Memory Box
 date: 2026-11-06
 type: website
 ---
