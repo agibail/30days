@@ -3,6 +3,7 @@
 Every change to the 30 Days project, newest first. Entries are added by `./30 save`.
 
 <!-- new entries go below this line -->
+- 2026-11-12 20:11 · **Day 14** · Rename to "in my grocery bag"
 - 2026-11-12 20:09 · **Day 09** · 1970s Times Square signage: flickering red neon XXX, marquee-bulb lettering, chasing light-bulb borders and neon-tube headings
 - 2026-11-12 20:07 · **Day 10** · Pick your pen: each player chooses red, pink, orange, green, blue, purple or black ink, and partners see each other's colour on the grid
 - 2026-11-12 20:06 · **Day 09** · Rename to XXX Marks the Spot

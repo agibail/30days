@@ -1,5 +1,5 @@
 window.MANIFEST = {
-  "generated": "2026-11-12 20:09",
+  "generated": "2026-11-12 20:11",
   "start": "2026-10-30",
   "total": 30,
   "repo": "https://github.com/agibail/30days",
@@ -83,11 +83,11 @@ window.MANIFEST = {
      "media": [],
      "iterations": [{"id": "v01", "path": "days/day-13/v01/index.html", "date": "2026-11-12 19:52", "note": "Bored or Busy: a friend map where a yellow ring means bored and open to hang out and a purple ring means busy, with notes, timers, waves and an Only bored filter"}],
      "log": [{"date": "2026-11-12 19:52", "msg": "Bored or Busy: a friend map where a yellow ring means bored and open to hang out and a purple ring means busy, with notes, timers, waves and an Only bored filter"}]},
-    {"day": 14, "slug": "day-14", "title": "Cheapest Cart NYC", "date": "2026-11-12", "type": "website",
+    {"day": 14, "slug": "day-14", "title": "in my grocery bag", "date": "2026-11-12", "type": "website",
      "notes": "Type in your grocery list and see which New York City supermarket sells it for the least. You get three answers: the cheapest single stop, the best two-stop split (and which items to buy where), and the rock-bottom total if you buy every item wherever it's cheapest. You can filter by borough and include Costco if you have a membership.\n\n**How the prices work:** NYC chains don't publish a public price feed, so this is a price book of estimates and not live prices. It has about 80 everyday items with a typical NYC shelf price for each. That price is scaled by how each of 13 chains usually prices that kind of food: Aldi, Costco, Food Bazaar, Western Beef, Trader Joe's, Wegmans, Target, H Mart, C-Town, Key Food, Fairway, Whole Foods and Morton Williams. A few well-known outliers are set by hand, like Trader Joe's bananas and H Mart's tofu and rice. Open any item to see every store's price, follow ↗ to check the real price on that store's site, or tap a price to correct it. Corrections are saved in your browser.\n\nThe list parser understands quantities and loose names: \"2 dozen eggs\", \"oat milk x2\", \"3 lb chicken thighs\", \"cereal\", \"tp\".\n\nBuilt with plain HTML/CSS/JS. Prices live in `data.js`.\n\nNext time: real prices from receipts people upload, and store locations on a map.",
      "site": "days/day-14/site/index.html", "link": "day-14/",
      "media": [],
-     "iterations": [{"id": "v01", "path": "days/day-14/v01/index.html", "date": "2026-11-12 19:54", "note": "Cheapest Cart NYC: type your grocery list and see the cheapest NYC supermarket, the best two-stop split and the rock-bottom total, across 13 chains with a borough filter and editable estimated prices"}],
-     "log": [{"date": "2026-11-12 19:54", "msg": "Cheapest Cart NYC: type your grocery list and see the cheapest NYC supermarket, the best two-stop split and the rock-bottom total, across 13 chains with a borough filter and editable estimated prices"}]}
+     "iterations": [{"id": "v01", "path": "days/day-14/v01/index.html", "date": "2026-11-12 19:54", "note": "Cheapest Cart NYC: type your grocery list and see the cheapest NYC supermarket, the best two-stop split and the rock-bottom total, across 13 chains with a borough filter and editable estimated prices"}, {"id": "v02", "path": "days/day-14/v02/index.html", "date": "2026-11-12 20:11", "note": "Rename to \"in my grocery bag\""}],
+     "log": [{"date": "2026-11-12 20:11", "msg": "Rename to \"in my grocery bag\""}, {"date": "2026-11-12 19:54", "msg": "Cheapest Cart NYC: type your grocery list and see the cheapest NYC supermarket, the best two-stop split and the rock-bottom total, across 13 chains with a borough filter and editable estimated prices"}]}
   ]
 };

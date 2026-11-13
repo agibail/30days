@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 14 · in my grocery bag</title>
+  <meta name="description" content="Paste your grocery list and see which New York City supermarket sells it cheapest.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="day">Day 14</span>
+      <h1>In my<br>grocery <span class="nyc">bag</span></h1>
+    </div>
+    <p class="lede">Put in your grocery list. See which New York City supermarket sells it for the least, and whether a second stop is worth it.</p>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <label for="list" class="plabel">Your list <span class="muted">one per line</span></label>
+      <textarea id="list" spellcheck="false" placeholder="eggs&#10;2 lb chicken thighs&#10;oat milk x2&#10;rice"></textarea>
+      <div class="row">
+        <button id="example" class="ghost">Example list</button>
+        <button id="clear" class="ghost">Clear</button>
+      </div>
+
+      <div class="plabel">Where do you shop?</div>
+      <div id="boroughs" class="seg"></div>
+      <p class="muted small" id="storeCount"></p>
+
+      <label class="toggle"><input type="checkbox" id="costco"> <span>I have a Costco membership</span></label>
+
+      <div class="fine">
+        <p><strong>About the prices.</strong> These are estimates, not live prices. NYC chains don’t publish a public price feed, so each price is a typical shelf price for the item, scaled by how each chain usually prices that kind of food, plus a few well-known outliers. <span id="itemCount"></span> items, last calibrated <span id="updated"></span>.</p>
+        <p>Open any item to see every store, follow ↗ to check the real price, and tap a price to correct it. Your corrections are saved on this device. <button id="resetPrices" class="link">Reset my prices</button></p>
+      </div>
+    </aside>
+
+    <section id="results" aria-live="polite"></section>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
