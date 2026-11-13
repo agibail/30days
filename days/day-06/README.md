@@ -1,5 +1,5 @@
 ---
-title: Nail Studio
+title: Mani Machine
 date: 2026-11-04
 type: website
 ---
@@ -7,7 +7,7 @@ type: website
 Design your nails on a photo of your own hands. [Open it](days/day-06/site/index.html)
 
 - Upload, drop or paste a photo of your hands (backs to the camera, fingers spread). A hand-tracking model (MediaPipe Hand Landmarker) finds all ten fingertips and places a nail on each.
-- **Opens with my hands** (`media/hands.png`, shot on a white background), already bare. Upload your own with *New photo*.
+- **Uses only my hands** (`media/hands.png`, shot on a white background), nails always bare. There's no upload and no before/after button.
 - **Only your hands.** Everything else (you, the room, the background) is cut away automatically. The hand landmarks give a rough hand shape, and MediaPipe's multiclass selfie segmenter, run on a close crop of each hand, keeps only body skin (not face, hair or clothes). Wrists fade out softly. On a plain background (like my white wall) it just keys out that colour, so whole arms stay and the edges come out clean; specks are dropped and arms fade at the bottom. A PNG that is already cut out is used as is. The saved photo is the cut-out, never the original.
 - **Bare nails every time.** Whatever polish is in the photo gets covered with a soft patch in your own skin tone (sampled just behind each cuticle), then a fresh natural nail is drawn on top: pink bed, lunula, white free edge, a little shine. Your designs are never saved, so every visit starts bare. Only the photo and where your nails sit are remembered (in your browser).
 - **Grow and cut:** Grow / ✂ Cut buttons (the clipping falls off), a length slider, or drag the red ✂ handle in *Fit nails* mode.

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Day 06 · Nail Studio</title>
+  <title>Day 06 · Mani Machine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=Source+Code+Pro:ital,wght@0,700;1,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=Rubik+Mono+One&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --blush: #f5e8e3;
@@ -25,8 +25,8 @@
     [hidden] { display: none !important; }
 
     header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 22px 28px 12px; flex-wrap: wrap; }
-    header h1 { font: 700 44px/1 "Source Code Pro", ui-monospace, Menlo, monospace; margin: 0; letter-spacing: -0.03em; }
-    header h1 em { color: var(--cherry); }
+    header h1 { font: 400 clamp(26px, 6vw, 40px)/1.05 "Rubik Mono One", ui-monospace, Menlo, monospace; margin: 0; letter-spacing: -0.02em; }
+    header h1 em { color: var(--cherry); font-style: normal; }
     header p { margin: 6px 0 0; color: var(--muted); font-size: 13px; max-width: 52ch; }
     .head-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -38,17 +38,7 @@
     .btn.small { padding: 5px 11px; font-size: 12px; }
 
     /* empty state */
-    #drop { margin: 18px 28px 28px; border: 1.5px dashed #cfaea6; border-radius: 22px; min-height: 64vh; display: grid; place-items: center; text-align: center; padding: 32px; transition: background .15s; }
-    #drop.over { background: #fff3ef; }
-    #drop h2 { font: italic 400 clamp(36px, 6vw, 66px)/1.05 var(--serif); margin: 0 0 12px; }
-    #drop p { color: var(--muted); margin: 0 auto 22px; max-width: 46ch; }
-    .hands-art { display: flex; justify-content: center; gap: 10px; margin-bottom: 22px; }
-    .hands-art span { width: 22px; height: 34px; border-radius: 11px 11px 6px 6px; background: linear-gradient(90deg, #e9b4ac, #f7d4cd 50%, #e9b4ac); box-shadow: inset 0 -9px 0 #fbf2ec; }
-    .hands-art span:nth-child(1) { transform: translateY(10px) rotate(-16deg); }
-    .hands-art span:nth-child(2) { transform: translateY(-4px) rotate(-5deg); }
-    .hands-art span:nth-child(3) { transform: translateY(-10px); }
-    .hands-art span:nth-child(4) { transform: translateY(-4px) rotate(5deg); }
-    .hands-art span:nth-child(5) { transform: translateY(6px) rotate(12deg); height: 28px; }
+    #drop { margin: 18px 28px 28px; color: var(--muted); }
 
     /* app */
     #app { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 22px; padding: 6px 28px 32px; align-items: start; }
@@ -103,32 +93,21 @@
       #app { grid-template-columns: minmax(0, 1fr); padding: 4px 16px 24px; }
       aside { position: static; }
       header { padding: 18px 16px 10px; }
-      #drop { margin: 12px 16px 20px; }
     }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1>Nail <em>Studio</em></h1>
-      <p>Upload a photo of your hands. Only your hands are kept, and your nails come back bare every time. Grow them, cut them, file them into shape, then paint.</p>
+      <h1>Mani <em>Machine</em></h1>
+      <p>My hands, nails bare every time. Grow them, cut them, file them into shape, then paint.</p>
     </div>
     <div class="head-btns">
-      <button class="btn" id="newPhoto">New photo</button>
       <button class="btn solid" id="download" disabled>Download PNG</button>
     </div>
   </header>
 
-  <input type="file" id="file" accept="image/*" hidden>
-
-  <section id="drop">
-    <div>
-      <div class="hands-art"><span></span><span></span><span></span><span></span><span></span></div>
-      <h2>Show me your hands</h2>
-      <p>Hold your hands up with the backs facing the camera, fingers spread, nails in view. Only your hands are kept: you and the background are cut away. Drop the photo here, paste it, or choose one. It stays in your browser.</p>
-      <button class="btn solid" id="choose">Choose a photo</button>
-    </div>
-  </section>
+  <p id="drop" hidden>The hands photo didn't load here. Open this page from the gallery site.</p>
 
   <main id="app" hidden>
     <section>
@@ -142,7 +121,6 @@
         <button class="btn small" id="remove">Remove nail</button>
         <span class="spacer"></span>
         <button class="btn small" id="whole">Whole photo</button>
-        <button class="btn small" id="compare">Hold: original</button>
       </div>
       <div class="stagewrap" id="stagewrap">
         <canvas id="view" class="paint"></canvas>
@@ -220,7 +198,7 @@
 <script>
 (() => {
   const $ = s => document.querySelector(s);
-  const KEY = 'day06-nail-studio-v3';
+  const KEY = 'day06-nail-studio-v4';
   const DEFAULT_HANDS = '../media/hands.png';
   const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
   const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
@@ -250,7 +228,7 @@
   let nails = [], sel = 0, nextId = 1;
   let mode = 'paint', tool = 'brush', scope = 'all';
   let color = POLISH[2][1], colorName = POLISH[2][0];
-  let brush = 8, compare = false, dirty = true;
+  let brush = 8, dirty = true;
   let viewM = new DOMMatrix(), zoomM = new DOMMatrix();
   let undoStack = [], particles = [];
   let landmarker = null;
@@ -507,7 +485,6 @@
     ctx.setTransform(M);
     if (!photoCut && cutting) return; // never flash the full photo while the hands are being cut out
     ctx.drawImage(photo, 0, 0);
-    if (compare) return;
     for (const n of nails) drawNail(ctx, M, n);
     drawParticles(ctx, M);
     if (extras) extras(ctx, M);
@@ -663,8 +640,8 @@
     } catch (e) {}
   }
   function restore() {
-    // older saves: v1 kept the whole photo, v2 predates the built-in hands
-    try { ['v1', 'v2'].forEach(v => localStorage.removeItem('day06-nail-studio-' + v)); } catch (e) {}
+    // older saves could hold an uploaded photo; only the built-in hands are used now
+    try { ['v1', 'v2', 'v3'].forEach(v => localStorage.removeItem('day06-nail-studio-' + v)); } catch (e) {}
     let d; try { d = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
     if (!d || !d.photo) return loadDefault();
     const im = new Image();
@@ -678,7 +655,7 @@
   }
 
   // ---------- photo ----------
-  // with nothing saved, start with the built-in photo of my hands (on file:// the canvas would be tainted, so fall back to the drop zone)
+  // the built-in photo of my hands (on file:// the canvas would be tainted, so say so instead)
   function loadDefault() {
     const im = new Image(), fail = () => { $('#drop').hidden = false; $('#app').hidden = true; };
     $('#drop').hidden = true;
@@ -700,14 +677,6 @@
     undoStack = []; nails = []; sel = 0;
     layout();
   }
-  function loadFile(f) {
-    if (!f || !/^image\//.test(f.type) && !/\.(heic|heif)$/i.test(f.name)) return;
-    const url = URL.createObjectURL(f), im = new Image();
-    im.onload = () => { setPhoto(im); URL.revokeObjectURL(url); detect(); };
-    im.onerror = () => alert("That photo didn't open here. iPhone HEIC photos only open in Safari, so try a JPG or PNG.");
-    im.src = url;
-  }
-
   async function detect() {
     if (!photo) return;
     cutting = !photoCut; dirty = true;
@@ -1099,27 +1068,12 @@
   $('#remove').onclick = () => { if (!nails[sel]) return; snapshot(); nails.splice(sel, 1); sel = Math.max(0, Math.min(sel, nails.length - 1)); changed(true); };
   $('#detect').onclick = detect;
 
-  const cmp = $('#compare');
-  const holdOn = e => { e.preventDefault(); compare = true; dirty = true; }, holdOff = () => { compare = false; dirty = true; };
-  cmp.addEventListener('pointerdown', holdOn); ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => cmp.addEventListener(t, holdOff));
-
   $('#download').onclick = () => {
     if (!photo) return;
     const c = document.createElement('canvas'); c.width = photo.width; c.height = photo.height;
-    const was = compare; compare = false;
     drawScene(c.getContext('2d'), new DOMMatrix(), null, true);
-    compare = was;
     c.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'nails-day06.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }, 'image/png');
   };
-
-  // file in
-  const fileIn = $('#file');
-  $('#choose').onclick = $('#newPhoto').onclick = () => fileIn.click();
-  fileIn.onchange = () => { loadFile(fileIn.files[0]); fileIn.value = ''; };
-  ['dragover', 'dragenter'].forEach(t => addEventListener(t, e => { e.preventDefault(); $('#drop').classList.add('over'); }));
-  ['dragleave', 'drop'].forEach(t => addEventListener(t, e => { e.preventDefault(); $('#drop').classList.remove('over'); }));
-  addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
-  addEventListener('paste', e => { const f = [...(e.clipboardData?.files || [])][0]; if (f) loadFile(f); });
 
   addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
