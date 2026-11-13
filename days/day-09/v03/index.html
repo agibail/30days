@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Day 09 · XXX Marks the Spot</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Codystar&family=Monoton&family=Tilt+Neon&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ------------------------------------------------------------------
+     CONFIG: paste your Supabase project URL + anon (public) key in the
+     <script> at the bottom. Until then the site runs in local mode.
+     ------------------------------------------------------------------ */
+  :root {
+    color-scheme: dark;
+    --bg: #0b0c0e;
+    --panel: rgba(14, 15, 18, .92);
+    --line: rgba(255,255,255,.12);
+    --ink: #f3efe8;
+    --muted: #9a958c;
+    --red: #ff2d55;
+    --red-dim: rgba(255,45,85,.18);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+  body { font: 14px/1.55 "IBM Plex Mono", ui-monospace, monospace; overflow: hidden; }
+  button, input, textarea { font: inherit; color: inherit; }
+  a { color: var(--ink); }
+
+  #map { position: fixed; inset: 0; background: #111; }
+  .leaflet-container { background: #111; font: inherit; }
+  .leaflet-control-attribution { background: rgba(0,0,0,.55) !important; color: #aaa !important; font-size: 10px; }
+  .leaflet-control-attribution a { color: #ccc !important; }
+  .leaflet-bar a { background: var(--panel); color: var(--ink); border-color: var(--line) !important; }
+  .leaflet-bar a:hover { background: #222; }
+
+  /* ---------- the X pins ---------- */
+  .x-pin { width: 28px; height: 28px; position: relative; cursor: pointer; }
+  .x-pin::before, .x-pin::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 26px; height: 5px; border-radius: 3px; background: var(--red);
+    box-shadow: 0 0 0 1.5px rgba(0,0,0,.55), 0 0 14px rgba(255,45,85,.7);
+  }
+  .x-pin::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .x-pin::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+  .x-pin:hover::before, .x-pin:hover::after, .x-pin.on::before, .x-pin.on::after { background: #fff; }
+  .x-pin.draft::before, .x-pin.draft::after { background: #fff; animation: pulse 1s ease-in-out infinite alternate; }
+  @keyframes pulse { to { opacity: .35; } }
+
+  /* ---------- title card ---------- */
+  .brand {
+    position: fixed; z-index: 500; top: max(16px, env(safe-area-inset-top)); left: 16px;
+    padding: 14px 16px 12px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; backdrop-filter: blur(10px); max-width: min(340px, calc(100vw - 32px));
+  }
+  .brand .day { margin: 0; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .brand h1 { margin: 2px 0 4px; font: 400 40px/0.95 Anton, Impact, sans-serif; letter-spacing: .01em; text-transform: uppercase; }
+  .brand p { margin: 0; color: var(--muted); font-size: 12.5px; }
+  .brand .stats { margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+  .brand .stats button { background: none; border: 0; padding: 0; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .mode { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+
+  /* ---------- main CTA ---------- */
+  .cta {
+    position: fixed; z-index: 500; right: 16px; bottom: max(24px, env(safe-area-inset-bottom));
+    background: var(--red); color: #fff; border: 0; border-radius: 999px;
+    padding: 14px 22px; font-weight: 500; letter-spacing: .04em; cursor: pointer;
+    box-shadow: 0 8px 30px rgba(255,45,85,.45);
+  }
+  .cta:hover { filter: brightness(1.1); }
+
+  /* ---------- drawer ---------- */
+  .drawer {
+    position: fixed; z-index: 600; top: 16px; right: 16px; bottom: 16px;
+    width: min(420px, calc(100vw - 32px));
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    backdrop-filter: blur(14px); display: flex; flex-direction: column;
+    transform: translateX(calc(100% + 32px)); transition: transform .32s cubic-bezier(.2,.8,.2,1);
+  }
+  .drawer.open { transform: none; }
+  .drawer header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .drawer header b { font: 400 20px/1 Anton, sans-serif; letter-spacing: .03em; text-transform: uppercase; }
+  .close { background: none; border: 1px solid var(--line); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; }
+  .close:hover { border-color: var(--ink); }
+  .drawer .body { overflow-y: auto; padding: 16px; flex: 1; }
+
+  /* story view */
+  .shot { position: relative; border-radius: 10px; overflow: hidden; background: #1a1a1a; aspect-ratio: 3/2; border: 1px solid var(--line); }
+  .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .shot .xmark { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; transform: translate(-50%,-50%); }
+  .shot .xmark::before, .shot .xmark::after { content: ""; position: absolute; left: 50%; top: 50%; width: 32px; height: 5px; border-radius: 3px; background: var(--red); box-shadow: 0 0 0 1.5px rgba(0,0,0,.6), 0 0 18px rgba(255,45,85,.8); }
+  .shot .xmark::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .shot .xmark::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+  .shot .coords { position: absolute; left: 8px; bottom: 8px; background: rgba(0,0,0,.65); padding: 3px 7px; border-radius: 6px; font-size: 11px; }
+  .place { margin: 14px 0 0; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--red); }
+  .story-title { margin: 4px 0 10px; font: 400 30px/1.02 Anton, sans-serif; text-transform: uppercase; letter-spacing: .01em; word-wrap: break-word; }
+  .story-text { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
+  .meta { margin-top: 14px; color: var(--muted); font-size: 12px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 13px; border-radius: 999px; border: 1px solid var(--line); background: none; text-decoration: none; cursor: pointer; font-size: 12.5px; }
+  .btn:hover { border-color: var(--ink); }
+  .btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.1); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .tag { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--muted); }
+
+  /* form */
+  label { display: block; margin: 0 0 14px; }
+  label > span { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  input[type=text], textarea {
+    width: 100%; background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; outline: none;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--red); background: rgba(255,255,255,.08); }
+  textarea { min-height: 150px; resize: vertical; }
+  .row { display: flex; gap: 8px; }
+  .row input { flex: 1; min-width: 0; }
+  .hint { font-size: 12px; color: var(--muted); margin: -6px 0 14px; }
+  .hint.err { color: var(--red); }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; }
+  .check input { margin-top: 4px; accent-color: var(--red); }
+  .preview { margin-bottom: 14px; }
+  .counter { float: right; font-size: 11px; color: var(--muted); letter-spacing: 0; text-transform: none; }
+  .note { font-size: 12px; color: var(--muted); border-left: 2px solid var(--red); padding-left: 10px; margin: 4px 0 16px; }
+
+  /* list */
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li { border-bottom: 1px solid var(--line); }
+  .list button { width: 100%; text-align: left; background: none; border: 0; padding: 12px 2px; cursor: pointer; display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
+  .list button:hover .t { color: var(--red); }
+  .list img { width: 64px; height: 44px; object-fit: cover; border-radius: 6px; background: #222; }
+  .list .t { font: 400 17px/1.1 Anton, sans-serif; text-transform: uppercase; }
+  .list .p { font-size: 11.5px; color: var(--muted); }
+
+  /* ---------- age gate ---------- */
+  .gate { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(5,5,7,.78); backdrop-filter: blur(16px); }
+  .gate[hidden] { display: none; }
+  .gate .card { max-width: 420px; text-align: center; }
+  .gate h2 { font: 400 clamp(48px, 13vw, 84px)/.9 Anton, sans-serif; text-transform: uppercase; margin: 0 0 14px; }
+  .gate p { color: var(--muted); margin: 0 0 22px; }
+  .gate .btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* placing mode banner */
+  .banner { position: fixed; z-index: 550; left: 50%; top: 16px; transform: translateX(-50%); background: #fff; color: #111; padding: 9px 14px; border-radius: 999px; font-size: 12.5px; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
+  .banner[hidden] { display: none; }
+
+  .toast { position: fixed; z-index: 900; left: 50%; bottom: 90px; transform: translateX(-50%); background: #fff; color: #111; padding: 10px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; max-width: calc(100vw - 32px); text-align: center; }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 640px) {
+    .brand { padding: 10px 12px; }
+    .brand h1 { font-size: 30px; }
+    .brand p { display: none; }
+    .drawer { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 82vh; height: 82vh; border-radius: 16px 16px 0 0; transform: translateY(105%); }
+    .banner { top: auto; bottom: 90px; }
+  }
+
+  /* =================================================================
+     1970s 42nd Street signage: red neon tubes + chasing marquee bulbs
+     ================================================================= */
+  :root { --neon: #ff2d55; --neon-hot: #ff0040; --bulb: #fff1bf; --bulb-glow: #ffb22e; --bulb-off: #4a2a14; }
+
+  .marquee {
+    position: relative;
+    background: linear-gradient(180deg, #1c0a0e 0%, #0e0507 100%);
+    border: 2px solid #3d1c10; border-radius: 6px;
+    box-shadow: inset 0 0 0 4px #160709, inset 0 0 30px rgba(255,60,40,.12), 0 14px 40px rgba(0,0,0,.65);
+  }
+  .brand.marquee { padding: 24px 24px 20px; backdrop-filter: none; }
+  .bulb-ring { position: absolute; inset: 0; pointer-events: none; }
+  .bulb {
+    position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #7a4a22, var(--bulb-off));
+    animation: chase 1.05s steps(1) infinite;
+  }
+  .bulb.b1 { animation-delay: -.35s; }
+  .bulb.b2 { animation-delay: -.7s; }
+  @keyframes chase {
+    0%    { background: radial-gradient(circle at 35% 35%, #fff, var(--bulb)); box-shadow: 0 0 4px var(--bulb-glow), 0 0 12px var(--bulb-glow), 0 0 22px rgba(255,140,0,.5); }
+    33.4% { background: radial-gradient(circle at 35% 35%, #7a4a22, var(--bulb-off)); box-shadow: none; }
+  }
+
+  .sign { margin: 4px 0 8px; display: flex; flex-direction: column; align-items: flex-start; text-transform: uppercase; }
+  .neon {
+    font: 400 58px/1 Monoton, sans-serif; letter-spacing: .02em; color: #ffe1e8;
+    text-shadow: 0 0 2px #fff, 0 0 7px var(--neon), 0 0 16px var(--neon), 0 0 32px var(--neon-hot), 0 0 60px var(--neon-hot);
+    animation: flicker 7s infinite;
+  }
+  .bulbs {
+    font: 400 27px/1.15 Codystar, sans-serif; letter-spacing: .03em; color: var(--bulb);
+    text-shadow: 0 0 3px var(--bulb-glow), 0 0 10px var(--bulb-glow), 0 0 22px rgba(255,140,0,.6);
+    margin-top: 6px; font-weight: 400;
+  }
+  @keyframes flicker {
+    0%, 41%, 43.5%, 45%, 80%, 81.5%, 100% { opacity: 1; }
+    42%, 44%, 81% { opacity: .3; text-shadow: 0 0 2px var(--neon); }
+  }
+
+  /* neon tube headings everywhere else */
+  .drawer header b, .story-title, .list .t, .cta {
+    font-family: "Tilt Neon", sans-serif; font-weight: 400; color: #ffe8ee;
+    text-shadow: 0 0 2px #fff, 0 0 6px var(--neon), 0 0 14px var(--neon), 0 0 28px var(--neon-hot);
+  }
+  .drawer header b { font-size: 22px; letter-spacing: .06em; }
+  .story-title { font-size: 32px; line-height: 1.08; letter-spacing: .02em; }
+  .list .t { font-size: 17px; text-shadow: 0 0 2px #fff, 0 0 6px var(--neon), 0 0 12px var(--neon); }
+  .list button:hover .t { color: #fff; }
+  .place { font-family: Codystar, sans-serif; font-size: 15px; letter-spacing: .06em; color: var(--bulb); text-shadow: 0 0 6px var(--bulb-glow); }
+
+  .cta {
+    background: rgba(20,5,8,.85); border: 2px solid #ff8aa5; font-size: 19px; letter-spacing: .06em; padding: 11px 22px;
+    box-shadow: 0 0 6px var(--neon), 0 0 18px var(--neon), inset 0 0 10px rgba(255,45,85,.55), 0 10px 30px rgba(0,0,0,.5);
+  }
+  .cta:hover { filter: none; background: rgba(60,8,20,.9); }
+
+  .gate .card.marquee { padding: 38px 30px 30px; max-width: 460px; }
+  .gate .sign { align-items: center; margin: 0 0 16px; }
+  .gate .neon { font-size: clamp(64px, 20vw, 108px); }
+  .gate .bulbs { font-size: clamp(26px, 8vw, 42px); }
+
+  @media (max-width: 640px) {
+    .brand.marquee { padding: 18px 18px 14px; }
+    .neon { font-size: 42px; }
+    .bulbs { font-size: 21px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .neon { animation: none; }
+    .bulb { animation: none; background: radial-gradient(circle at 35% 35%, #fff, var(--bulb)); box-shadow: 0 0 4px var(--bulb-glow), 0 0 12px var(--bulb-glow); }
+  }
+</style>
+</head>
+<body>
+
+<div id="map" aria-label="Satellite map of submitted places"></div>
+
+<div class="brand marquee">
+  <p class="day">Day 09</p>
+  <h1 class="sign"><span class="neon">XXX</span><span class="bulbs">Marks the Spot</span></h1>
+  <p>Satellite views of places people have had sex, and the stories of how they ended up there.</p>
+  <div class="stats">
+    <span id="count">—</span>
+    <button id="listBtn" type="button">All stories</button>
+    <button id="randomBtn" type="button">Random</button>
+  </div>
+  <div class="mode" id="mode"></div>
+</div>
+
+<button class="cta" id="addBtn" type="button">+ Drop your X</button>
+<div class="banner" id="banner" hidden>Click the map to place your X</div>
+
+<aside class="drawer" id="drawer" aria-live="polite">
+  <header><b id="drawerTitle"></b><button class="close" id="closeBtn" type="button" aria-label="Close">×</button></header>
+  <div class="body" id="drawerBody"></div>
+</aside>
+
+<div class="gate" id="gate" hidden>
+  <div class="card marquee">
+    <h2 class="sign"><span class="neon">XXX</span><span class="bulbs">Marks the Spot</span></h2>
+    <p>Anonymous stories about sex, pinned to real places. Adults only.</p>
+    <div class="btns">
+      <button class="btn primary" id="enter" type="button">I'm 18 or older</button>
+      <a class="btn" href="../../../">Take me back</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<template id="tplForm">
+  <div class="note">Anonymous. No names, no faces, no one who didn't agree to be in the story. Think twice before pinning a home address: anyone can see these coordinates.</div>
+  <form id="form" autocomplete="off">
+    <label>
+      <span>Coordinates</span>
+      <div class="row">
+        <input type="text" name="coords" placeholder="40.6892, -74.0445" required>
+        <button class="btn" type="button" id="pickBtn" title="Click the map">Pick on map</button>
+      </div>
+    </label>
+    <p class="hint" id="coordHint">Paste lat, lng or a Google Maps link, pick on the map, or <button class="btn" type="button" id="geoBtn" style="padding:2px 8px">use my location</button></p>
+    <div class="preview" id="preview" hidden></div>
+    <label class="check"><input type="checkbox" name="fuzz"> <span style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0">Blur my location by ~150m (the X lands nearby, not exactly)</span></label>
+    <label><span>What is this place? <i class="counter" data-for="place"></i></span><input type="text" name="place" maxlength="60" placeholder="The roof of my old office" required></label>
+    <label><span>Headline <i class="counter" data-for="title"></i></span><input type="text" name="title" maxlength="80" placeholder="We missed the last ferry" required></label>
+    <label><span>How did you end up there? <i class="counter" data-for="story"></i></span><textarea name="story" maxlength="2000" placeholder="Tell the story. The why, not the play-by-play." required></textarea></label>
+    <label class="check"><input type="checkbox" name="consent" required> <span style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0">Everyone involved was an adult and into it. This is my story to tell.</span></label>
+    <button class="btn primary" type="submit" style="width:100%;justify-content:center;padding:12px">Drop the X</button>
+    <p class="hint" id="formMsg" style="margin-top:10px"></p>
+  </form>
+</template>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ===================================================================
+   CONFIG — Supabase (see the day's README.md for the 2-minute setup).
+   The anon key is public by design; row-level security protects data.
+   Leave blank to run in local mode (example pins + your browser only).
+   =================================================================== */
+const SUPABASE_URL = "";
+const SUPABASE_KEY = "";
+
+const REMOTE = !!(SUPABASE_URL && SUPABASE_KEY);
+const LS_KEY = "xmarks:pins";
+
+const EXAMPLES = [
+  { id: "ex1", lat: 38.0408, lng: -122.9789, place: "A lighthouse parking lot", title: "The fog never lifted",
+    story: "We drove two hours to watch the sunset at the lighthouse. The fog came in so thick we couldn't see the ocean, the lighthouse, or anything past the hood of the car. So we stopped trying to see things.", created_at: "2026-10-02" },
+  { id: "ex2", lat: 33.9867, lng: -116.0306, place: "A campsite in the desert", title: "Too hot for the tent",
+    story: "The tent was a sauna at midnight, so we dragged the sleeping bags onto the rocks. More stars than I'd ever seen. I've never been that sunburned in the dark before.", created_at: "2026-09-14" },
+  { id: "ex3", lat: 40.5749, lng: -73.9786, place: "Under the boardwalk", title: "Our first anniversary",
+    story: "The plan was a fancy dinner. The plan fell apart when the reservation got lost. We bought hot dogs and walked the beach until it was empty, and it turned out to be the better plan.", created_at: "2026-08-21" },
+  { id: "ex4", lat: 64.1466, lng: -21.9426, place: "A rental car in Reykjavík", title: "The sun wouldn't set",
+    story: "Midsummer. 1am and still bright out. Neither of us could sleep, the hotel walls were paper thin, and the rental car had very generous back seats.", created_at: "2026-07-03" },
+].map(p => ({ ...p, example: true }));
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, kids = []) => { const n = Object.assign(document.createElement(tag), props); for (const k of [].concat(kids)) n.append(k); return n; };
+const fmt = (n, d = 4) => Number(n).toFixed(d);
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2600); }
+
+/** Static satellite image (Esri World Imagery export) centred on the point. */
+function shotURL(lat, lng, w = 900, h = 600, meters = 360) {
+  const dLat = (meters / 2) / 111320;
+  const dLng = dLat * (w / h) / Math.cos(lat * Math.PI / 180);
+  const bbox = [lng - dLng, lat - dLat, lng + dLng, lat + dLat].join(",");
+  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox}&bboxSR=4326&imageSR=3857&size=${w},${h}&format=jpg&f=image`;
+}
+const earthURL = (lat, lng) => `https://earth.google.com/web/@${lat},${lng},60a,500d,35y,0h,55t,0r`;
+const gmapsURL = (lat, lng) => `https://www.google.com/maps/@${lat},${lng},300m/data=!3m1!1e3`;
+
+/** Accepts "lat, lng", "lat lng", Google Maps URLs (@lat,lng or ?q=lat,lng). */
+function parseCoords(s) {
+  s = (s || "").trim();
+  const m = s.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
+            s.match(/[?&](?:q|ll|query)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
+            s.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (!m) return null;
+  const lat = +m[1], lng = +m[2];
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
+function fuzz({ lat, lng }) {
+  const r = 80 + Math.random() * 120, a = Math.random() * Math.PI * 2;
+  return { lat: lat + (r * Math.sin(a)) / 111320, lng: lng + (r * Math.cos(a)) / (111320 * Math.cos(lat * Math.PI / 180)) };
+}
+function ago(d) {
+  const s = (Date.now() - new Date(d)) / 1000;
+  if (s < 3600) return "just now";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  if (s < 86400 * 45) return Math.floor(s / 86400) + "d ago";
+  return new Date(d).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
+/* ---------------- storage ---------------- */
+const store = {
+  async list() {
+    if (REMOTE) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/pins?select=id,lat,lng,place,title,story,created_at&hidden=eq.false&order=created_at.desc&limit=2000`,
+        { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+      if (!r.ok) throw new Error("load failed");
+      const rows = await r.json();
+      return rows.length ? rows : EXAMPLES;
+    }
+    let mine = [];
+    try { mine = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch {}
+    return [...mine, ...EXAMPLES];
+  },
+  async add(pin) {
+    if (REMOTE) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/pins`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify(pin),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return (await r.json())[0];
+    }
+    const saved = { ...pin, id: "local-" + Date.now(), created_at: new Date().toISOString(), mine: true };
+    try {
+      const mine = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+      localStorage.setItem(LS_KEY, JSON.stringify([saved, ...mine]));
+    } catch {}
+    return saved;
+  },
+};
+
+/* ---------------- map ---------------- */
+const map = L.map("map", { zoomControl: false, worldCopyJump: true, minZoom: 2 }).setView([30, -40], 3);
+L.control.zoom({ position: "bottomleft" }).addTo(map);
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 19, attribution: "Imagery © Esri, Maxar, Earthstar Geographics",
+}).addTo(map);
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 19, opacity: .75,
+}).addTo(map);
+
+const xIcon = (cls = "") => L.divIcon({ className: "", html: `<div class="x-pin ${cls}"></div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
+
+let pins = [], markers = new Map(), current = null, draft = null, placing = false;
+
+function render() {
+  markers.forEach(m => m.remove()); markers.clear();
+  for (const p of pins) {
+    const m = L.marker([p.lat, p.lng], { icon: xIcon(), title: p.title, keyboard: true }).addTo(map);
+    m.on("click", () => openStory(p));
+    markers.set(p.id, m);
+  }
+  const real = pins.filter(p => !p.example).length;
+  $("#count").textContent = real ? `${real} X${real === 1 ? "" : "s"} on the map` : `${pins.length} example Xs`;
+  $("#mode").textContent = REMOTE ? "" : "Local mode · your pins stay in this browser";
+}
+function highlight(id) {
+  markers.forEach((m, k) => m.getElement()?.firstChild?.classList.toggle("on", k === id));
+}
+
+/* ---------------- drawer ---------------- */
+const drawer = $("#drawer");
+function openDrawer(title, content) {
+  $("#drawerTitle").textContent = title;
+  const body = $("#drawerBody"); body.replaceChildren(content); body.scrollTop = 0;
+  drawer.classList.add("open");
+}
+function closeDrawer() {
+  drawer.classList.remove("open"); current = null; highlight(null); stopPlacing();
+  if (draft) { draft.remove(); draft = null; }
+  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+}
+$("#closeBtn").onclick = closeDrawer;
+addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+function shot(lat, lng) {
+  const img = el("img", { src: shotURL(lat, lng), alt: "Satellite view of the spot", loading: "lazy" });
+  return el("div", { className: "shot" }, [img, el("div", { className: "xmark" }), el("div", { className: "coords", textContent: `${fmt(lat)}, ${fmt(lng)}` })]);
+}
+
+function openStory(p) {
+  current = p; highlight(p.id);
+  history.replaceState(null, "", "#" + encodeURIComponent(p.id));
+  map.flyTo([p.lat, p.lng], Math.max(map.getZoom(), 15), { duration: 1.2 });
+
+  const meta = el("div", { className: "meta" }, [el("span", { textContent: ago(p.created_at) })]);
+  if (p.example) meta.append(el("span", { className: "tag", textContent: "example" }));
+  if (p.mine && !REMOTE) meta.append(el("span", { className: "tag", textContent: "only you can see this" }));
+
+  const share = el("button", { className: "btn", type: "button", textContent: "Copy link" });
+  share.onclick = async () => { try { await navigator.clipboard.writeText(location.href); toast("Link copied"); } catch { toast(location.href); } };
+
+  const idx = pins.indexOf(p);
+  const next = el("button", { className: "btn", type: "button", textContent: "Next →" });
+  next.onclick = () => openStory(pins[(idx + 1) % pins.length]);
+
+  openDrawer("The story", el("div", {}, [
+    shot(p.lat, p.lng),
+    el("p", { className: "place", textContent: p.place }),
+    el("h2", { className: "story-title", textContent: p.title }),
+    el("p", { className: "story-text", textContent: p.story }),
+    meta,
+    el("div", { className: "actions" }, [
+      el("a", { className: "btn primary", href: earthURL(p.lat, p.lng), target: "_blank", rel: "noopener", textContent: "Open in Google Earth ↗" }),
+      el("a", { className: "btn", href: gmapsURL(p.lat, p.lng), target: "_blank", rel: "noopener", textContent: "Google Maps ↗" }),
+      share, next,
+    ]),
+  ]));
+}
+
+function openList() {
+  const ul = el("ul", { className: "list" });
+  for (const p of pins) {
+    const b = el("button", { type: "button" }, [
+      el("img", { src: shotURL(p.lat, p.lng, 192, 132, 300), alt: "", loading: "lazy" }),
+      el("div", {}, [el("div", { className: "t", textContent: p.title }), el("div", { className: "p", textContent: `${p.place} · ${ago(p.created_at)}` })]),
+    ]);
+    b.onclick = () => openStory(p);
+    ul.append(el("li", {}, b));
+  }
+  openDrawer(`All stories (${pins.length})`, ul);
+}
+$("#listBtn").onclick = openList;
+$("#randomBtn").onclick = () => pins.length && openStory(pins[Math.floor(Math.random() * pins.length)]);
+
+/* ---------------- submit flow ---------------- */
+function stopPlacing() { placing = false; $("#banner").hidden = true; map.getContainer().style.cursor = ""; }
+
+function openForm() {
+  highlight(null); current = null;
+  const frag = $("#tplForm").content.cloneNode(true);
+  openDrawer("Drop your X", frag);
+  const f = $("#form"), coordsIn = f.coords, hint = $("#coordHint"), prev = $("#preview");
+
+  for (const c of f.querySelectorAll(".counter")) {
+    const inp = f[c.dataset.for]; const upd = () => c.textContent = `${inp.value.length}/${inp.maxLength}`;
+    inp.addEventListener("input", upd); upd();
+  }
+
+  const setPoint = (pt, fromMap) => {
+    if (!pt) { prev.hidden = true; if (draft) { draft.remove(); draft = null; } return; }
+    if (fromMap) coordsIn.value = `${fmt(pt.lat, 5)}, ${fmt(pt.lng, 5)}`;
+    hint.classList.remove("err");
+    prev.replaceChildren(shot(pt.lat, pt.lng)); prev.hidden = false;
+    if (draft) draft.setLatLng([pt.lat, pt.lng]);
+    else draft = L.marker([pt.lat, pt.lng], { icon: xIcon("draft"), interactive: false }).addTo(map);
+    map.flyTo([pt.lat, pt.lng], Math.max(map.getZoom(), 16), { duration: .9 });
+  };
+  f._setPoint = setPoint;
+
+  coordsIn.addEventListener("change", () => {
+    const pt = parseCoords(coordsIn.value);
+    if (!pt && coordsIn.value.trim()) { hint.textContent = "Couldn't read that. Try: 40.6892, -74.0445"; hint.classList.add("err"); }
+    setPoint(pt);
+  });
+  coordsIn.addEventListener("paste", () => setTimeout(() => coordsIn.dispatchEvent(new Event("change")), 0));
+
+  $("#pickBtn").onclick = () => {
+    placing = true; $("#banner").hidden = false; map.getContainer().style.cursor = "crosshair";
+    if (innerWidth <= 640) drawer.classList.remove("open");
+  };
+  $("#geoBtn").onclick = () => {
+    if (!navigator.geolocation) return toast("Location isn't available here");
+    toast("Finding you…");
+    navigator.geolocation.getCurrentPosition(
+      pos => setPoint({ lat: pos.coords.latitude, lng: pos.coords.longitude }, true),
+      () => toast("Couldn't get your location"), { enableHighAccuracy: true, timeout: 10000 });
+  };
+
+  f.addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("#formMsg"); msg.classList.remove("err");
+    let pt = parseCoords(coordsIn.value);
+    if (!pt) { hint.textContent = "Add the coordinates first."; hint.classList.add("err"); coordsIn.focus(); return; }
+    if (f.fuzz.checked) pt = fuzz(pt);
+    const pin = {
+      lat: +fmt(pt.lat, 5), lng: +fmt(pt.lng, 5),
+      place: f.place.value.trim(), title: f.title.value.trim(), story: f.story.value.trim(),
+    };
+    if (!pin.place || !pin.title || pin.story.length < 20) { msg.textContent = "Give it a place, a headline and at least a couple of sentences."; msg.classList.add("err"); return; }
+    const btn = f.querySelector("[type=submit]"); btn.disabled = true; btn.textContent = "Dropping…";
+    try {
+      const saved = await store.add(pin);
+      if (draft) { draft.remove(); draft = null; }
+      pins = [saved, ...pins.filter(p => !(REMOTE && p.example))];
+      render(); openStory(saved);
+      toast(REMOTE ? "Your X is on the map" : "Saved in this browser (local mode)");
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false; btn.textContent = "Drop the X";
+      msg.textContent = "Couldn't save that. Try again in a moment."; msg.classList.add("err");
+    }
+  });
+}
+$("#addBtn").onclick = openForm;
+
+map.on("click", e => {
+  if (!placing) return;
+  stopPlacing();
+  const f = $("#form"); if (!f) return;
+  drawer.classList.add("open");
+  f._setPoint({ lat: e.latlng.lat, lng: e.latlng.lng }, true);
+});
+
+/* ---------------- marquee bulbs ---------------- */
+/** Rings an element with evenly spaced bulbs; classes b0/b1/b2 chase in sequence. */
+function bulbify(box) {
+  const ring = box.querySelector(":scope > .bulb-ring") || box.appendChild(el("div", { className: "bulb-ring" }));
+  ring.setAttribute("aria-hidden", "true");
+  const draw = () => {
+    const inset = 10, gap = 16, W = box.clientWidth - inset * 2, H = box.clientHeight - inset * 2;
+    if (W <= 0 || H <= 0) return;
+    const nx = Math.max(2, Math.round(W / gap)), ny = Math.max(2, Math.round(H / gap)), pts = [];
+    for (let i = 0; i < nx; i++) pts.push([inset + W * i / nx, inset]);
+    for (let j = 0; j < ny; j++) pts.push([inset + W, inset + H * j / ny]);
+    for (let i = nx; i > 0; i--) pts.push([inset + W * i / nx, inset + H]);
+    for (let j = ny; j > 0; j--) pts.push([inset, inset + H * j / ny]);
+    ring.replaceChildren(...pts.map(([x, y], k) => el("i", { className: `bulb b${k % 3}`, style: `left:${x}px;top:${y}px` })));
+  };
+  draw();
+  new ResizeObserver(draw).observe(box);
+  document.fonts?.ready.then(draw);
+}
+document.querySelectorAll(".marquee").forEach(bulbify);
+
+/* ---------------- boot ---------------- */
+function enter() {
+  $("#gate").hidden = true;
+  try { localStorage.setItem("xmarks:18", "1"); } catch {}
+}
+$("#enter").onclick = enter;
+try { if (localStorage.getItem("xmarks:18") !== "1") $("#gate").hidden = false; } catch { $("#gate").hidden = false; }
+
+(async () => {
+  try { pins = await store.list(); }
+  catch (e) { console.error(e); pins = EXAMPLES; toast("Couldn't reach the database. Showing examples."); }
+  render();
+  const id = decodeURIComponent(location.hash.slice(1));
+  const hit = id && pins.find(p => String(p.id) === id);
+  if (hit) openStory(hit);
+})();
+</script>
+</body>
+</html>

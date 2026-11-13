@@ -57,7 +57,6 @@
   }
   .brand .day { margin: 0; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
   .brand h1 { margin: 2px 0 4px; font: 400 40px/0.95 Anton, Impact, sans-serif; letter-spacing: .01em; text-transform: uppercase; }
-  .brand h1 span { color: var(--red); }
   .brand p { margin: 0; color: var(--muted); font-size: 12.5px; }
   .brand .stats { margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; }
   .brand .stats button { background: none; border: 0; padding: 0; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -140,7 +139,6 @@
   .gate[hidden] { display: none; }
   .gate .card { max-width: 420px; text-align: center; }
   .gate h2 { font: 400 clamp(48px, 13vw, 84px)/.9 Anton, sans-serif; text-transform: uppercase; margin: 0 0 14px; }
-  .gate h2 span { color: var(--red); }
   .gate p { color: var(--muted); margin: 0 0 22px; }
   .gate .btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
@@ -157,6 +155,79 @@
     .brand p { display: none; }
     .drawer { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 82vh; height: 82vh; border-radius: 16px 16px 0 0; transform: translateY(105%); }
     .banner { top: auto; bottom: 90px; }
+  }
+
+  /* =================================================================
+     1970s 42nd Street signage: red neon tubes + chasing marquee bulbs
+     ================================================================= */
+  :root { --neon: #ff2d55; --neon-hot: #ff0040; --bulb: #fff1bf; --bulb-glow: #ffb22e; --bulb-off: #4a2a14; }
+
+  .marquee {
+    position: relative;
+    background: linear-gradient(180deg, #1c0a0e 0%, #0e0507 100%);
+    border: 2px solid #3d1c10; border-radius: 6px;
+    box-shadow: inset 0 0 0 4px #160709, inset 0 0 30px rgba(255,60,40,.12), 0 14px 40px rgba(0,0,0,.65);
+  }
+  .brand.marquee { padding: 24px 24px 20px; backdrop-filter: none; }
+  .bulb-ring { position: absolute; inset: 0; pointer-events: none; }
+  .bulb {
+    position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #7a4a22, var(--bulb-off));
+    animation: chase 1.05s steps(1) infinite;
+  }
+  .bulb.b1 { animation-delay: -.35s; }
+  .bulb.b2 { animation-delay: -.7s; }
+  @keyframes chase {
+    0%    { background: radial-gradient(circle at 35% 35%, #fff, var(--bulb)); box-shadow: 0 0 4px var(--bulb-glow), 0 0 12px var(--bulb-glow), 0 0 22px rgba(255,140,0,.5); }
+    33.4% { background: radial-gradient(circle at 35% 35%, #7a4a22, var(--bulb-off)); box-shadow: none; }
+  }
+
+  .sign { margin: 4px 0 8px; display: flex; flex-direction: column; align-items: flex-start; text-transform: uppercase; }
+  .neon {
+    font: 400 58px/1 Monoton, sans-serif; letter-spacing: .02em; color: #ffe1e8;
+    text-shadow: 0 0 2px #fff, 0 0 7px var(--neon), 0 0 16px var(--neon), 0 0 32px var(--neon-hot), 0 0 60px var(--neon-hot);
+    animation: flicker 7s infinite;
+  }
+  .bulbs {
+    font: 400 27px/1.15 Codystar, sans-serif; letter-spacing: .03em; color: var(--bulb);
+    text-shadow: 0 0 3px var(--bulb-glow), 0 0 10px var(--bulb-glow), 0 0 22px rgba(255,140,0,.6);
+    margin-top: 6px; font-weight: 400;
+  }
+  @keyframes flicker {
+    0%, 41%, 43.5%, 45%, 80%, 81.5%, 100% { opacity: 1; }
+    42%, 44%, 81% { opacity: .3; text-shadow: 0 0 2px var(--neon); }
+  }
+
+  /* neon tube headings everywhere else */
+  .drawer header b, .story-title, .list .t, .cta {
+    font-family: "Tilt Neon", sans-serif; font-weight: 400; color: #ffe8ee;
+    text-shadow: 0 0 2px #fff, 0 0 6px var(--neon), 0 0 14px var(--neon), 0 0 28px var(--neon-hot);
+  }
+  .drawer header b { font-size: 22px; letter-spacing: .06em; }
+  .story-title { font-size: 32px; line-height: 1.08; letter-spacing: .02em; }
+  .list .t { font-size: 17px; text-shadow: 0 0 2px #fff, 0 0 6px var(--neon), 0 0 12px var(--neon); }
+  .list button:hover .t { color: #fff; }
+  .place { font-family: Codystar, sans-serif; font-size: 15px; letter-spacing: .06em; color: var(--bulb); text-shadow: 0 0 6px var(--bulb-glow); }
+
+  .cta {
+    background: rgba(20,5,8,.85); border: 2px solid #ff8aa5; font-size: 19px; letter-spacing: .06em; padding: 11px 22px;
+    box-shadow: 0 0 6px var(--neon), 0 0 18px var(--neon), inset 0 0 10px rgba(255,45,85,.55), 0 10px 30px rgba(0,0,0,.5);
+  }
+  .cta:hover { filter: none; background: rgba(60,8,20,.9); }
+
+  .gate .card.marquee { padding: 38px 30px 30px; max-width: 460px; }
+  .gate .sign { align-items: center; margin: 0 0 16px; }
+  .gate .neon { font-size: clamp(64px, 20vw, 108px); }
+  .gate .bulbs { font-size: clamp(26px, 8vw, 42px); }
+
+  @media (max-width: 640px) {
+    .brand.marquee { padding: 18px 18px 14px; }
+    .neon { font-size: 42px; }
+    .bulbs { font-size: 21px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .neon { animation: none; }
+    .bulb { animation: none; background: radial-gradient(circle at 35% 35%, #fff, var(--bulb)); box-shadow: 0 0 4px var(--bulb-glow), 0 0 12px var(--bulb-glow); }
   }
 </style>
 </head>
@@ -487,6 +558,27 @@ map.on("click", e => {
   drawer.classList.add("open");
   f._setPoint({ lat: e.latlng.lat, lng: e.latlng.lng }, true);
 });
+
+/* ---------------- marquee bulbs ---------------- */
+/** Rings an element with evenly spaced bulbs; classes b0/b1/b2 chase in sequence. */
+function bulbify(box) {
+  const ring = box.querySelector(":scope > .bulb-ring") || box.appendChild(el("div", { className: "bulb-ring" }));
+  ring.setAttribute("aria-hidden", "true");
+  const draw = () => {
+    const inset = 10, gap = 16, W = box.clientWidth - inset * 2, H = box.clientHeight - inset * 2;
+    if (W <= 0 || H <= 0) return;
+    const nx = Math.max(2, Math.round(W / gap)), ny = Math.max(2, Math.round(H / gap)), pts = [];
+    for (let i = 0; i < nx; i++) pts.push([inset + W * i / nx, inset]);
+    for (let j = 0; j < ny; j++) pts.push([inset + W, inset + H * j / ny]);
+    for (let i = nx; i > 0; i--) pts.push([inset + W * i / nx, inset + H]);
+    for (let j = ny; j > 0; j--) pts.push([inset, inset + H * j / ny]);
+    ring.replaceChildren(...pts.map(([x, y], k) => el("i", { className: `bulb b${k % 3}`, style: `left:${x}px;top:${y}px` })));
+  };
+  draw();
+  new ResizeObserver(draw).observe(box);
+  document.fonts?.ready.then(draw);
+}
+document.querySelectorAll(".marquee").forEach(bulbify);
 
 /* ---------------- boot ---------------- */
 function enter() {
