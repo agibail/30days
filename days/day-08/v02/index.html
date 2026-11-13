@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 08 · Memory Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Instrument+Serif:ital@0;1&family=Courier+Prime&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #ece8e1;
+    --ink: #1c1b1a;
+    --muted: #7a756d;
+    --w: min(500px, 88vw);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    min-height: 100vh;
+    font: 15px/1.5 "Courier Prime", ui-monospace, monospace;
+    display: flex; flex-direction: column; align-items: center;
+    overflow-x: hidden;
+    background:
+      radial-gradient(120% 70% at 50% 0%, #f6f3ee 0%, transparent 60%),
+      var(--bg);
+  }
+  header { text-align: center; padding: 28px 16px 0; }
+  header .day { margin: 0; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+  h1 { margin: 2px 0 0; font: italic 400 clamp(40px, 9vw, 64px)/1 "Instrument Serif", Georgia, serif; letter-spacing: -.01em; }
+  .count { margin: 8px 0 0; color: var(--muted); font-size: 13px; min-height: 1.5em; }
+
+  /* ---------- scene ---------- */
+  .scene {
+    position: relative;
+    width: var(--w);
+    aspect-ratio: 600 / 710;
+    margin: 0 auto calc(var(--w) * .36);
+    user-select: none; -webkit-user-select: none;
+  }
+  .box { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .box.thunk { animation: thunk .28s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes thunk { 0% { transform: translateY(0) } 35% { transform: translateY(3px) } 100% { transform: translateY(0) } }
+  .lock { cursor: pointer; }
+  .lock .plug { transform-box: fill-box; transform-origin: center; transition: transform .45s cubic-bezier(.5,0,.3,1.4); }
+  .lock.turned .plug { transform: rotate(90deg); }
+  .lock:focus { outline: none; }
+  .lock:focus-visible .ring { stroke: #ffd36b; stroke-width: 2; }
+
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+  .slot-layer { z-index: 1; }   /* clipped at the slot line by JS */
+  .hand-layer { z-index: 3; }
+
+  /* ---------- the card ---------- */
+  .card {
+    position: absolute;
+    left: 8%; top: 82%; width: 84%;
+    aspect-ratio: 5 / 3;
+    container-type: inline-size;
+    pointer-events: auto;
+    transform-origin: 50% 50%;
+    will-change: transform;
+    cursor: grab;
+    touch-action: none;
+    border-radius: .6cqw;
+    background: #fdfbf5;
+    box-shadow: 0 1px 0 rgba(0,0,0,.05), 0 18px 30px -12px rgba(40,30,20,.45), 0 4px 10px -4px rgba(40,30,20,.25);
+  }
+  /* ruled lines live on a pseudo-element so cqw measures the card itself */
+  .card::before, .mini::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    background:
+      linear-gradient(transparent calc(17cqw - 1px), #e27d86 calc(17cqw - 1px), #e27d86 calc(17cqw + .3px), transparent calc(17cqw + .3px)),
+      repeating-linear-gradient(transparent 0 calc(7.4cqw - 1px), #a9c4e0 calc(7.4cqw - 1px) 7.4cqw) 0 17cqw / 100% calc(100% - 17cqw - 3cqw) no-repeat;
+  }
+  .card.dragging { cursor: grabbing; }
+  .card .top {
+    position: absolute; left: 5cqw; right: 5cqw; top: 4.6cqw;
+    display: flex; justify-content: space-between; align-items: baseline;
+    font: 3cqw/1 "Courier Prime", monospace; color: #8a8378; letter-spacing: .08em; text-transform: uppercase;
+  }
+  .card textarea {
+    position: absolute; left: 5cqw; right: 5cqw; top: 17.6cqw; height: calc(7.4cqw * 4);
+    margin: 0; padding: 0; border: 0; outline: none; resize: none; background: transparent;
+    font: 600 5.6cqw/7.4cqw "Caveat", "Bradley Hand", cursive; color: #233a6b;
+    overflow: hidden;
+    cursor: text;
+  }
+  .card textarea::placeholder { color: #b2aea6; }
+  .card .from {
+    position: absolute; right: 5cqw; bottom: 3.4cqw; width: 42%;
+    display: flex; align-items: baseline; gap: 1.5cqw;
+    font: 3cqw/1 "Courier Prime", monospace; color: #8a8378; text-transform: uppercase; letter-spacing: .08em;
+  }
+  .card .from input {
+    flex: 1; min-width: 0; border: 0; outline: none; background: transparent; padding: 0;
+    font: 600 5cqw/1 "Caveat", cursive; color: #233a6b; text-transform: none; letter-spacing: 0;
+    border-bottom: 1px dashed #c9c3b8;
+  }
+  .card.nope { animation: nope .4s; }
+  @keyframes nope { 20%,60% { translate: -8px 0 } 40%,80% { translate: 8px 0 } }
+
+  /* ---------- controls ---------- */
+  .controls { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 16px 48px; }
+  .btn {
+    font: inherit; font-size: 15px; letter-spacing: .04em;
+    padding: 12px 22px; border-radius: 999px; border: 0; cursor: pointer;
+    background: #1b1b1d; color: #f4f1ea;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 6px 14px -6px rgba(0,0,0,.5);
+    transition: transform .12s, opacity .2s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .4; cursor: default; transform: none; }
+  .hint { margin: 0; color: var(--muted); font-size: 12px; text-align: center; }
+  .link { font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px; }
+
+  /* ---------- inside the box ---------- */
+  .inside {
+    position: fixed; inset: 0; z-index: 10;
+    background: rgba(18,18,20,.97);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: none; flex-direction: column;
+    overflow-y: auto;
+    color: #eee8dd;
+  }
+  .inside.open { display: flex; animation: fade .3s; }
+  @keyframes fade { from { opacity: 0 } }
+  .inside header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; width: min(960px, 100%); margin: 0 auto; padding: 24px 16px 8px; text-align: left; }
+  .inside h2 { margin: 0; font: italic 400 34px/1 "Instrument Serif", serif; }
+  .inside .close { color: #c9c1b4; }
+  .pile { width: min(960px, 100%); margin: 0 auto; padding: 16px 16px 64px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 22px; }
+  .pile .empty { grid-column: 1 / -1; text-align: center; color: #9a948a; padding: 60px 0; }
+  .mini {
+    position: relative; container-type: inline-size; aspect-ratio: 5/3; border-radius: 3px; color: #233a6b;
+    background: #fdfbf5;
+    box-shadow: 0 14px 24px -12px rgba(0,0,0,.7);
+    animation: deal .45s backwards cubic-bezier(.2,.8,.3,1.1);
+  }
+  @keyframes deal { from { opacity: 0; transform: translateY(30px) rotate(0deg) } }
+  .mini .top { position: absolute; left: 5cqw; right: 5cqw; top: 4.6cqw; display: flex; justify-content: space-between; font: 3.2cqw/1 "Courier Prime", monospace; color: #8a8378; text-transform: uppercase; letter-spacing: .08em; }
+  .mini p { position: absolute; left: 5cqw; right: 5cqw; top: 17.6cqw; margin: 0; font: 600 5.6cqw/7.4cqw "Caveat", cursive; white-space: pre-wrap; overflow-wrap: anywhere; max-height: calc(7.4cqw * 4); overflow: hidden; }
+  .mini .by { position: absolute; right: 5cqw; bottom: 3.4cqw; font: 600 5cqw/1 "Caveat", cursive; }
+
+  @media (prefers-reduced-motion: reduce) { .box.thunk, .mini, .inside.open { animation: none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="day">Day 08</p>
+  <h1>Memory Box</h1>
+  <p class="count" id="count"></p>
+</header>
+
+<div class="scene" id="scene">
+  <svg class="box" id="box" viewBox="0 -70 600 710" aria-hidden="false" role="img" aria-label="A black locked metal memory box with a slot in the lid">
+    <defs>
+      <!-- hammertone powder-coat: soft bumps + fine speckle -->
+      <filter id="hammer" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="2" seed="4" result="n"/>
+        <feDiffuseLighting in="n" surfaceScale="1.6" lighting-color="#fff" result="lit">
+          <feDistantLight azimuth="235" elevation="55"/>
+        </feDiffuseLighting>
+        <feColorMatrix in="lit" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  .14 0 0 0 -.09" result="bumps"/>
+        <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="9" result="s"/>
+        <feColorMatrix in="s" type="matrix" values="0 0 0 0 .7  0 0 0 0 .7  0 0 0 0 .72  0 0 0 14 -11.6" result="speck"/>
+        <feComposite in="speck" in2="SourceGraphic" operator="in" result="speckIn"/>
+        <feComposite in="bumps" in2="SourceGraphic" operator="in" result="bumpsIn"/>
+        <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="bumpsIn"/><feMergeNode in="speckIn"/></feMerge>
+      </filter>
+      <linearGradient id="gTop" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2b2b2e"/><stop offset=".55" stop-color="#202023"/><stop offset="1" stop-color="#2c2c30"/>
+      </linearGradient>
+      <linearGradient id="gBand" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3a3a3e"/><stop offset=".25" stop-color="#1d1d20"/><stop offset="1" stop-color="#141416"/>
+      </linearGradient>
+      <linearGradient id="gBody" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#19191b"/><stop offset=".5" stop-color="#121214"/><stop offset="1" stop-color="#0c0c0d"/>
+      </linearGradient>
+      <linearGradient id="gPocket" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#121214"/><stop offset=".55" stop-color="#18171a"/><stop offset="1" stop-color="#0d0d0e"/>
+      </linearGradient>
+      <linearGradient id="gSheen" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/>
+        <stop offset=".5" stop-color="#fff" stop-opacity=".05"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="gChrome" cx=".4" cy=".35" r=".8">
+        <stop offset="0" stop-color="#fafafa"/><stop offset=".45" stop-color="#b9bcc1"/><stop offset=".8" stop-color="#7d8086"/><stop offset="1" stop-color="#5a5c61"/>
+      </radialGradient>
+      <radialGradient id="gPlug" cx=".45" cy=".4" r=".7">
+        <stop offset="0" stop-color="#e9eaec"/><stop offset=".7" stop-color="#a3a6ab"/><stop offset="1" stop-color="#76797e"/>
+      </radialGradient>
+      <radialGradient id="gFloor" cx=".5" cy=".5" r=".5">
+        <stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <!-- floor shadow -->
+    <ellipse cx="300" cy="596" rx="270" ry="22" fill="url(#gFloor)"/>
+
+    <!-- body -->
+    <path d="M96 205 L504 205 L498 588 L102 588 Z" fill="url(#gBody)" filter="url(#hammer)"/>
+    <path d="M96 205 L504 205 L498 588 L102 588 Z" fill="url(#gSheen)"/>
+    <path d="M97 210 L102 586" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/>
+
+    <!-- lid: top face -->
+    <path id="lidTop" d="M106 58 L494 58 L540 174 L60 174 Z" fill="url(#gTop)" filter="url(#hammer)"/>
+    <!-- hinge along the back edge -->
+    <g stroke="#3c3c41" stroke-width="3" stroke-linecap="round">
+      <path d="M150 57 h44 M216 57 h44 M282 57 h36 M340 57 h44 M406 57 h44"/>
+    </g>
+    <path d="M106 58 L494 58" stroke="#4a4a50" stroke-width="1.5"/>
+    <path d="M106 58 L60 174 M494 58 L540 174" stroke="#fff" stroke-opacity=".08" stroke-width="1"/>
+
+    <!-- slot: slit with a round opening in the middle -->
+    <g id="slot">
+      <rect x="168" y="102.5" width="264" height="8" rx="4" fill="#050506"/>
+      <ellipse cx="300" cy="106.5" rx="26" ry="11" fill="#050506"/>
+      <!-- lit far lip -->
+      <path d="M172 102.5 H275 M325 102.5 H428" stroke="#5a5a60" stroke-width="1" opacity=".55"/>
+      <path d="M276 100 Q300 92 324 100" fill="none" stroke="#5a5a60" stroke-width="1" opacity=".5"/>
+      <!-- near lip catches light -->
+      <path d="M172 111 H275 M325 111 H428" stroke="#6a6a70" stroke-width="1" opacity=".55"/>
+      <path d="M276 113 Q300 121 324 113" fill="none" stroke="#6a6a70" stroke-width="1" opacity=".55"/>
+    </g>
+    <!-- the line cards pass through (used by JS) -->
+    <line id="slotLine" x1="168" y1="106.5" x2="432" y2="106.5" stroke="none"/>
+
+    <!-- lock -->
+    <g class="lock" id="lock" tabindex="0" role="button" aria-label="Unlock the box to read the memories inside">
+      <title>Unlock</title>
+      <ellipse cx="300" cy="140" rx="24" ry="17" fill="#000" opacity=".45"/>
+      <ellipse class="ring" cx="300" cy="137" rx="21" ry="14.5" fill="url(#gChrome)" stroke="#2a2a2e" stroke-width=".8"/>
+      <ellipse cx="300" cy="137" rx="15" ry="10" fill="#6c6f74"/>
+      <g class="plug">
+        <ellipse cx="300" cy="137" rx="13.5" ry="9" fill="url(#gPlug)"/>
+        <path d="M300 130.5 v13 M297 133 h6" stroke="#2a2b2e" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <ellipse cx="294" cy="132" rx="6" ry="2.4" fill="#fff" opacity=".55"/>
+    </g>
+
+    <!-- lid: front lip -->
+    <path d="M60 174 L540 174 L538 214 L62 214 Z" fill="url(#gBand)" filter="url(#hammer)"/>
+    <path d="M61 174.6 H539" stroke="#77777e" stroke-width="1.4" opacity=".7"/>
+    <path d="M62 214 H538" stroke="#000" stroke-width="1.5" opacity=".6"/>
+    <rect x="96" y="214" width="408" height="10" fill="#000" opacity=".35"/>
+
+    <!-- front brochure pocket -->
+    <path d="M88 592 L88 328 Q88 320 96 320 L100 320 Q106 320 106 328 L106 370 Q106 392 130 392 L470 392 Q494 392 494 370 L494 328 Q494 320 500 320 L504 320 Q512 320 512 328 L512 592 Z"
+          fill="url(#gPocket)" filter="url(#hammer)"/>
+    <path d="M88 592 L88 328 Q88 320 96 320 L100 320 Q106 320 106 328 L106 370 Q106 392 130 392 L470 392 Q494 392 494 370 L494 328 Q494 320 500 320 L504 320 Q512 320 512 328 L512 592"
+          fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1.2"/>
+    <path d="M118 400 L482 400" stroke="#000" stroke-opacity=".5" stroke-width="1"/>
+    <!-- inner pocket panel outline -->
+    <path d="M114 404 L486 404 L486 576 Q486 582 480 582 L120 582 Q114 582 114 576 Z" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/>
+    <path d="M115 405 L485 405" stroke="#fff" stroke-opacity=".06"/>
+    <path d="M88 592 L512 592" stroke="#000" stroke-width="2" opacity=".6"/>
+  </svg>
+
+  <div class="layer slot-layer" id="slotLayer"></div>
+  <div class="layer hand-layer" id="handLayer">
+    <div class="card" id="card">
+      <div class="top"><span>a memory</span></div>
+      <textarea id="text" rows="4" maxlength="220" placeholder="Write a memory…" aria-label="Your memory"></textarea>
+      <label class="from"><span>from</span><input id="from" maxlength="28" placeholder="(optional)" aria-label="Your name (optional)"></label>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" id="submit">Slide it in</button>
+  <p class="hint">or drag the card up into the slot · ⌘/Ctrl + Enter</p>
+  <button class="link" id="openBtn">turn the key &amp; look inside</button>
+</div>
+
+<section class="inside" id="inside" aria-label="Memories inside the box">
+  <header>
+    <h2 id="insideTitle">Inside the box</h2>
+    <button class="link close" id="closeBtn">close the lid ✕</button>
+  </header>
+  <div class="pile" id="pile"></div>
+</section>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const scene = $('scene'), box = $('box'), card = $('card');
+  const slotLayer = $('slotLayer'), handLayer = $('handLayer');
+  const text = $('text'), from = $('from');
+  const submitBtn = $('submit');
+  const KEY = 'memory-box-v1';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- storage ----------
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
+  const save = list => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {} };
+  let memories = load();
+
+
+  function renderCount() {
+    const n = memories.length;
+    $('count').textContent = n === 0 ? 'empty, for now' : `${n} ${n === 1 ? 'memory' : 'memories'} inside`;
+  }
+  renderCount();
+
+  // ---------- sound (made on the fly, no files) ----------
+  let ac;
+  const audio = () => { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch {} return ac; };
+  function noise(dur, freq, q, vol) {
+    const a = audio(); if (!a) return;
+    const len = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1);
+    const src = a.createBufferSource(); src.buffer = buf;
+    const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+    const g = a.createGain(), t = a.currentTime;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + dur * .2); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    src.connect(f).connect(g).connect(a.destination); src.start(t);
+  }
+  function thud() {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+    o.type = 'sine'; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(55, t + .15);
+    g.gain.setValueAtTime(.35, t); g.gain.exponentialRampToValueAtTime(.0001, t + .22);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + .25);
+    noise(.12, 900, .7, .12);
+  }
+
+  // ---------- geometry ----------
+  // The card's resting spot is set in CSS; everything else is measured live.
+  function geo() {
+    const s = scene.getBoundingClientRect();
+    const line = $('slotLine').getBoundingClientRect();     // horizontal line through the slit
+    const W = card.offsetWidth, H = card.offsetHeight;
+    const cx = card.offsetLeft + W / 2, cy = card.offsetTop + H / 2;
+    const slotX = line.left + line.width / 2 - s.left;
+    const slotY = line.top - s.top;
+    const k = (line.width * .86) / W;                        // card fits the slit with a little room
+    return { W, H, cx, cy, slotX, slotY, k, sceneH: s.height,
+             tx: slotX - cx, ty: (slotY - 1 - k * H / 2) - cy };
+  }
+
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const easeIn = t => t * t * t;
+
+  // p: 0 = held in your hand, 1 = upright, lined up over the slit.  sink: px pushed into the slot.
+  let G = null, P = 0, dragX = 0, sink = 0;
+  function pose() {
+    const g = G || (G = geo());
+    const e = P;
+    const arc = Math.sin(Math.PI * e) * -0.06 * g.H;          // lifts a touch on the way up
+    const x = lerp(dragX, g.tx, e);
+    const y = lerp(0, g.ty, e) + arc + sink;
+    const s = lerp(1, g.k, e);
+    const rot = lerp(-2.2, 0, e) + Math.sin(Math.PI * e) * (dragX / Math.max(1, g.W)) * 6;
+    const tilt = lerp(14, 0, e);                              // held tipped back, stands upright over the slot
+    card.style.transform = `translate(${x}px, ${y}px) perspective(${g.W * 2.2}px) rotateX(${tilt}deg) rotate(${rot}deg) scale(${s})`;
+    const sh = 1 - e;
+    card.style.boxShadow = `0 1px 0 rgba(0,0,0,.05), 0 ${18 * sh + 2}px ${30 * sh + 6}px -12px rgba(40,30,20,${.45 * sh + .15}), 0 4px 10px -4px rgba(40,30,20,${.25 * sh})`;
+  }
+  pose();
+  addEventListener('resize', () => { G = null; if (!busy) pose(); });
+  document.fonts && document.fonts.ready.then(() => { G = null; if (!busy) pose(); });
+
+  function tween(ms, fn, ease = t => t) {
+    if (reduce) ms = Math.min(ms, 120);
+    return new Promise(res => {
+      const t0 = performance.now();
+      const step = now => {
+        const t = clamp((now - t0) / ms);
+        fn(ease(t));
+        t < 1 ? requestAnimationFrame(step) : res();
+      };
+      requestAnimationFrame(step);
+    });
+  }
+  const wait = ms => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+
+  // ---------- submitting ----------
+  let busy = false;
+
+  function valid() {
+    if (text.value.trim()) return true;
+    card.classList.remove('nope'); void card.offsetWidth; card.classList.add('nope');
+    text.focus();
+    return false;
+  }
+
+  async function slideIn() {
+    if (busy || !valid()) return false;
+    busy = true; submitBtn.disabled = true;
+    text.blur(); from.blur();
+    window.getSelection && window.getSelection().removeAllRanges();
+    G = geo();
+    const memory = { text: text.value.trim(), from: from.value.trim(), at: Date.now() };
+
+    // 1. lift the card up and line it up over the slit
+    const p0 = P, x0 = dragX;
+    noise(.35, 2400, .6, .05);
+    await tween(reduce ? 120 : 650 * (1 - p0) + 200, t => { P = lerp(p0, 1, t); dragX = x0; pose(); }, easeInOut);
+    P = 1; pose();
+    await wait(90);
+
+    // 2. hand it to the layer that is cut off at the slit, so whatever passes the slit vanishes into the box
+    slotLayer.style.clipPath = `inset(0 0 ${G.sceneH - G.slotY}px 0)`;
+    slotLayer.appendChild(card);
+
+    // 3. slide: a nudge into the slit, a catch, then the rest of the way down
+    const depth = G.k * G.H + 8;
+    noise(.25, 1800, .9, .14);
+    await tween(240, t => { sink = t * depth * .22; pose(); }, easeOut);
+    await wait(110);
+    noise(.45, 1500, .8, .16);
+    await tween(420, t => { sink = depth * (.22 + .78 * t); pose(); }, easeIn);
+    thud();
+    box.classList.remove('thunk'); void box.getBoundingClientRect(); box.classList.add('thunk');
+
+    memories.push(memory); save(memories); renderCount();
+
+    // 4. a fresh blank card comes back into your hand
+    text.value = ''; from.value = from.value; // keep the name for next time
+    P = 0; dragX = 0; sink = 0;
+    handLayer.appendChild(card);
+    slotLayer.style.clipPath = '';
+    G = null;
+    card.style.opacity = '0';
+    pose();
+    const base = card.style.transform;
+    await wait(250);
+    await tween(420, t => {
+      card.style.opacity = t;
+      card.style.transform = `translateY(${(1 - t) * 60}px) ` + base;
+    }, easeOut);
+    card.style.opacity = ''; pose();
+    busy = false; submitBtn.disabled = false;
+    return true;
+  }
+
+  submitBtn.addEventListener('click', slideIn);
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); slideIn(); }
+  });
+
+  // ---------- dragging the card up to the slot ----------
+  let drag = null;
+  card.addEventListener('pointerdown', e => {
+    if (busy || e.button !== 0) return;
+    if (e.target.closest('textarea, input')) return;
+    G = geo();
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+    card.setPointerCapture(e.pointerId);
+    card.classList.add('dragging');
+    e.preventDefault();
+  });
+  card.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
+    // moving up by the distance to the slot = fully lined up
+    P = clamp(-dy / Math.max(40, -G.ty * .9)) ;
+    P = easeOut(P) * .92;            // never fully there by hand; release finishes it
+    dragX = dx;
+    pose();
+  });
+  const endDrag = async e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const moved = drag.moved;
+    drag = null;
+    card.classList.remove('dragging');
+    if (!moved) { text.focus(); return; }
+    if (P > .45 && text.value.trim()) { await slideIn(); return; }
+    if (P > .45) valid();
+    const p0 = P, x0 = dragX;
+    busy = true;
+    await tween(380, t => { P = lerp(p0, 0, t); dragX = lerp(x0, 0, t); pose(); }, easeOut);
+    P = 0; dragX = 0; pose();
+    busy = false;
+  };
+  card.addEventListener('pointerup', endDrag);
+  card.addEventListener('pointercancel', endDrag);
+
+  // ---------- unlocking: read what's inside ----------
+  const lock = $('lock'), inside = $('inside'), pile = $('pile');
+  async function openBox() {
+    if (busy) return;
+    lock.classList.add('turned');
+    noise(.08, 3500, 2, .2);
+    await wait(420);
+    noise(.06, 2500, 3, .25);
+    pile.innerHTML = '';
+    if (!memories.length) {
+      pile.innerHTML = '<p class="empty">Nothing in here yet. Write the first one.</p>';
+    }
+    [...memories].reverse().forEach((m, i) => {
+      const el = document.createElement('article');
+      el.className = 'mini';
+      el.style.transform = `rotate(${((i * 37) % 7 - 3) * .7}deg)`;
+      el.style.animationDelay = `${Math.min(i, 14) * 45}ms`;
+      const top = document.createElement('div'); top.className = 'top';
+      top.innerHTML = '<span>a memory</span>';
+      const p = document.createElement('p'); p.textContent = m.text;
+      el.append(top, p);
+      if (m.from) { const by = document.createElement('div'); by.className = 'by'; by.textContent = '— ' + m.from; el.appendChild(by); }
+      pile.appendChild(el);
+    });
+    $('insideTitle').textContent = memories.length ? `Inside the box (${memories.length})` : 'Inside the box';
+    inside.classList.add('open');
+    $('closeBtn').focus();
+  }
+  function closeBox() {
+    inside.classList.remove('open');
+    lock.classList.remove('turned');
+    noise(.06, 2500, 3, .2);
+  }
+  lock.addEventListener('click', openBox);
+  lock.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBox(); } });
+  $('openBtn').addEventListener('click', openBox);
+  $('closeBtn').addEventListener('click', closeBox);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && inside.classList.contains('open')) closeBox(); });
+})();
+</script>
+</body>
+</html>

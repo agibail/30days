@@ -262,7 +262,7 @@
   <div class="layer slot-layer" id="slotLayer"></div>
   <div class="layer hand-layer" id="handLayer">
     <div class="card" id="card">
-      <div class="top"><span>a memory</span><span id="cardDate"></span></div>
+      <div class="top"><span>a memory</span></div>
       <textarea id="text" rows="4" maxlength="220" placeholder="Write a memory…" aria-label="Your memory"></textarea>
       <label class="from"><span>from</span><input id="from" maxlength="28" placeholder="(optional)" aria-label="Your name (optional)"></label>
     </div>
@@ -298,8 +298,6 @@
   const save = list => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {} };
   let memories = load();
 
-  const fmtDate = d => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  $('cardDate').textContent = fmtDate(new Date());
 
   function renderCount() {
     const n = memories.length;
@@ -504,7 +502,6 @@
       el.style.animationDelay = `${Math.min(i, 14) * 45}ms`;
       const top = document.createElement('div'); top.className = 'top';
       top.innerHTML = '<span>a memory</span>';
-      const d = document.createElement('span'); d.textContent = fmtDate(new Date(m.at)); top.appendChild(d);
       const p = document.createElement('p'); p.textContent = m.text;
       el.append(top, p);
       if (m.from) { const by = document.createElement('div'); by.className = 'by'; by.textContent = '— ' + m.from; el.appendChild(by); }
