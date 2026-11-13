@@ -1,5 +1,5 @@
 window.MANIFEST = {
-  "generated": "2026-11-05 16:35",
+  "generated": "2026-11-12 19:44",
   "start": "2026-10-30",
   "total": 30,
   "repo": "https://github.com/agibail/30days",
@@ -46,6 +46,24 @@ window.MANIFEST = {
      "site": "days/day-07/site/index.html", "link": "day-07/",
      "media": [],
      "iterations": [{"id": "v01", "path": "days/day-07/v01/index.html", "date": "2026-11-05 15:03", "note": "Swatch Card: turn colour photos into paint-chip cards with auto palettes, click-to-pick colours, paint-store names, three layouts, PNG download and a saved shelf"}],
-     "log": [{"date": "2026-11-05 15:03", "msg": "Swatch Card: turn colour photos into paint-chip cards with auto palettes, click-to-pick colours, paint-store names, three layouts, PNG download and a saved shelf"}]}
+     "log": [{"date": "2026-11-05 15:03", "msg": "Swatch Card: turn colour photos into paint-chip cards with auto palettes, click-to-pick colours, paint-store names, three layouts, PNG download and a saved shelf"}]},
+    {"day": 8, "slug": "day-08", "title": "Memory Box", "date": "2026-11-06", "type": "website",
+     "notes": "What I'm making today, what I learned, what I'd change.",
+     "site": "days/day-08/site/index.html", "link": "day-08/",
+     "media": [],
+     "iterations": [],
+     "log": []},
+    {"day": 9, "slug": "day-09", "title": "X Marks the Spot", "date": "2026-11-07", "type": "website",
+     "notes": "A satellite map of places people have had sex, each pinned with an anonymous story about how they ended up there. Drop coordinates (paste `lat, lng`, a Google Maps link, click the map, or use your location) and the spot comes back as a satellite photo with a red X, plus links to open it in Google Earth and Google Maps.\n\n**Tools:** Leaflet, Esri World Imagery (free satellite tiles and static image export, no API key), Supabase for shared storage.\n\n**Privacy:** posts are anonymous, there's an 18+ gate, a consent checkbox, and an optional \"blur my location by ~150m\" toggle.\n\n## Connecting Supabase (shared pins)\n\nUntil this is set up the site runs in **local mode**: everyone sees four example pins, and your own submissions are saved only in your browser.\n\n1. Create a free project at supabase.com.\n2. Open **SQL Editor** and run:\n\n```sql\ncreate table pins (\n  id uuid primary key default gen_random_uuid(),\n  created_at timestamptz not null default now(),\n  lat double precision not null check (lat between -90 and 90),\n  lng double precision not null check (lng between -180 and 180),\n  place text not null check (char_length(place) between 1 and 60),\n  title text not null check (char_length(title) between 1 and 80),\n  story text not null check (char_length(story) between 20 and 2000),\n  hidden boolean not null default false\n);\nalter table pins enable row level security;\ncreate policy \"read visible\" on pins for select using (hidden = false);\ncreate policy \"anyone can post\" on pins for insert with check (hidden = false);\n```\n\n3. **Project Settings → API**: copy the Project URL and the `anon` public key into `SUPABASE_URL` / `SUPABASE_KEY` near the bottom of `site/index.html`. The anon key is meant to be public; the policies above only let visitors read visible pins and add new ones (no edits or deletes).\n4. To take a post down: in the Table Editor set its `hidden` to `true`.",
+     "site": "days/day-09/site/index.html", "link": "day-09/",
+     "media": [],
+     "iterations": [{"id": "v01", "path": "days/day-09/v01/index.html", "date": "2026-11-12 19:44", "note": "X Marks the Spot: a satellite map where people anonymously pin places they've had sex and tell how they ended up there; ready for Supabase, local mode until connected"}],
+     "log": [{"date": "2026-11-12 19:44", "msg": "X Marks the Spot: a satellite map where people anonymously pin places they've had sex and tell how they ended up there; ready for Supabase, local mode until connected"}]},
+    {"day": 10, "slug": "day-10", "title": "Crossword Together", "date": "2026-11-08", "type": "website",
+     "notes": "What I'm making today, what I learned, what I'd change.",
+     "site": "days/day-10/site/index.html", "link": "day-10/",
+     "media": [],
+     "iterations": [],
+     "log": []}
   ]
 };

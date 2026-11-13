@@ -1,0 +1,1 @@
+2026-11-12 19:44	X Marks the Spot: a satellite map where people anonymously pin places they've had sex and tell how they ended up there; ready for Supabase, local mode until connected
