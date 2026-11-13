@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 · Crossword Together</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Gochi+Hand&family=Libre+Franklin:wght@400;600;800;900&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- shared SVG filters: rough paper edges, wobbly coffee ring -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" scale="9"/>
+    </filter>
+    <filter id="wobble" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.05" numOctaves="3" seed="3"/>
+      <feDisplacementMap in="SourceGraphic" scale="14"/>
+      <feGaussianBlur stdDeviation="0.8"/>
+    </filter>
+    <filter id="smudge"><feGaussianBlur stdDeviation="6"/></filter>
+  </svg>
+
+  <main class="book" id="book">
+    <!-- LEFT PAGE: the grid -->
+    <section class="page left">
+      <div class="running"><span>CROSSWORD TOGETHER</span><span id="runDate">—</span></div>
+
+      <header class="head">
+        <div class="puzno">Puzzle <b id="puzNo">—</b></div>
+        <h1 id="title">Loading…</h1>
+        <p class="byline" id="byline">&nbsp;</p>
+      </header>
+
+      <div class="cluebar" id="cluebar">
+        <button class="nav" id="prevClue" aria-label="Previous clue">‹</button>
+        <div class="cb-text"><b id="cbNum"></b> <span id="cbText"></span></div>
+        <button class="nav" id="nextClue" aria-label="Next clue">›</button>
+      </div>
+
+      <div class="gridwrap" id="gridwrap">
+        <div id="grid" class="grid" role="grid" aria-label="Crossword grid"></div>
+        <input id="kb" class="kb" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-label="Type answers">
+        <div class="stamp" id="stamp" hidden>SOLVED<small id="stampTime"></small></div>
+        <div class="loading" id="loading">Turning pages…</div>
+      </div>
+
+      <div class="tools">
+        <span class="timer" id="timer">0:00</span>
+        <button id="pencilBtn" class="tool" aria-pressed="false" title="Pencil in a guess">✎ Pencil</button>
+        <button id="rebusBtn" class="tool" title="Put several letters in one square">Rebus</button>
+        <div class="menu">
+          <button class="tool" data-menu="check">Check ▾</button>
+          <div class="pop" id="menu-check">
+            <button data-act="check" data-scope="cell">Square</button>
+            <button data-act="check" data-scope="word">Word</button>
+            <button data-act="check" data-scope="all">Puzzle</button>
+          </div>
+        </div>
+        <div class="menu">
+          <button class="tool" data-menu="reveal">Reveal ▾</button>
+          <div class="pop" id="menu-reveal">
+            <button data-act="reveal" data-scope="cell">Square</button>
+            <button data-act="reveal" data-scope="word">Word</button>
+            <button data-act="reveal" data-scope="all">Puzzle</button>
+          </div>
+        </div>
+        <button id="clearBtn" class="tool" title="Erase everything">Erase all</button>
+      </div>
+
+      <div class="folio" id="folioL">— —</div>
+      <div class="smudge s1"></div><div class="smudge s2"></div>
+    </section>
+
+    <!-- RIGHT PAGE: partner, clues, picker -->
+    <section class="page right">
+      <div class="inner">
+        <div class="running"><span id="runDow">—</span><span>FROM THE NEW YORK TIMES ARCHIVE</span></div>
+
+        <aside class="card" id="card">
+          <div class="tape"></div>
+          <div class="card-head">
+            <span class="dot" id="dot"></span>
+            <span id="statusText">Solving alone</span>
+          </div>
+          <div class="pens" id="pens" role="group" aria-label="Your pen colour"><span>Your pen</span></div>
+          <div id="soloBox">
+            <p class="hand">want help? send this to someone →</p>
+            <button id="inviteBtn" class="stampbtn">Invite a partner</button>
+          </div>
+          <div id="roomBox" hidden>
+            <div class="room">Room <b id="roomCode"></b></div>
+            <div class="linkrow">
+              <input id="roomLink" readonly aria-label="Invite link">
+              <button id="copyBtn" class="stampbtn small">Copy</button>
+            </div>
+            <ul class="who" id="who"></ul>
+          </div>
+        </aside>
+
+        <div class="clues">
+          <div class="col"><h2>ACROSS</h2><ol id="across"></ol></div>
+          <div class="col"><h2>DOWN</h2><ol id="down"></ol></div>
+        </div>
+
+        <footer class="picker">
+          <label class="pk-date">Pick a date
+            <input type="date" id="dateIn" min="1976-01-01" max="2018-12-31">
+          </label>
+          <button id="goBtn" class="stampbtn small">Open</button>
+          <div class="pk-random">
+            <span>Random</span>
+            <button data-dow="1" title="Monday (easiest)">M</button>
+            <button data-dow="2" title="Tuesday">T</button>
+            <button data-dow="3" title="Wednesday">W</button>
+            <button data-dow="4" title="Thursday">T</button>
+            <button data-dow="5" title="Friday">F</button>
+            <button data-dow="6" title="Saturday (hardest)">S</button>
+            <button data-dow="0" title="Sunday (big)">S</button>
+            <button data-dow="any" title="Any day">?</button>
+          </div>
+        </footer>
+
+        <div class="folio" id="folioR">— —</div>
+      </div>
+      <svg class="coffee" viewBox="0 0 200 200" aria-hidden="true">
+        <g filter="url(#wobble)" fill="none">
+          <circle cx="100" cy="100" r="78" stroke="rgba(120,72,24,.28)" stroke-width="7"/>
+          <circle cx="100" cy="100" r="74" stroke="rgba(120,72,24,.12)" stroke-width="14"/>
+          <path d="M40 140 Q30 160 48 170" stroke="rgba(120,72,24,.2)" stroke-width="5"/>
+        </g>
+      </svg>
+      <div class="dogear"></div>
+    </section>
+  </main>
+
+  <p class="colophon">Puzzles fetched live from <a href="https://github.com/doshea/nyt_crosswords" target="_blank" rel="noopener">doshea/nyt_crosswords</a>, an archive of New York Times crosswords, 1976–2018. Crosswords © The New York Times. Partners connect peer to peer through PeerJS.</p>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Codystar&family=Monoton&family=Tilt+Neon&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
   /* ------------------------------------------------------------------
      CONFIG: paste your Supabase project URL + anon (public) key in the
@@ -164,9 +164,9 @@
 
 <div id="map" aria-label="Satellite map of submitted places"></div>
 
-<div class="brand">
+<div class="brand marquee">
   <p class="day">Day 09</p>
-  <h1>XXX Marks<br>the <span>Spot</span></h1>
+  <h1 class="sign"><span class="neon">XXX</span><span class="bulbs">Marks the Spot</span></h1>
   <p>Satellite views of places people have had sex, and the stories of how they ended up there.</p>
   <div class="stats">
     <span id="count">—</span>
@@ -185,8 +185,8 @@
 </aside>
 
 <div class="gate" id="gate" hidden>
-  <div class="card">
-    <h2>XXX Marks<br>the <span>Spot</span></h2>
+  <div class="card marquee">
+    <h2 class="sign"><span class="neon">XXX</span><span class="bulbs">Marks the Spot</span></h2>
     <p>Anonymous stories about sex, pinned to real places. Adults only.</p>
     <div class="btns">
       <button class="btn primary" id="enter" type="button">I'm 18 or older</button>

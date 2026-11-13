@@ -212,6 +212,10 @@ h1 {
 .cell .fill.pencil { opacity: .42; transform: rotate(-6deg) scale(.86); }
 
 /* highlights: marker over newsprint */
+.cell {
+  --pa: color-mix(in srgb, var(--pcol, #1f3a9e) 24%, transparent);
+  --pa-cell: color-mix(in srgb, var(--pcol, #1f3a9e) 42%, transparent);
+}
 .cell::after {
   content: ""; position: absolute; inset: 0; z-index: 1;
   pointer-events: none; mix-blend-mode: multiply;
