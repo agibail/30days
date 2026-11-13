@@ -1,0 +1,1 @@
+2026-11-12 19:50	Who's Watching: paste one command from Terminal or PowerShell and see every time an app turned on your camera, with odd ones flagged; runs fully in the browser

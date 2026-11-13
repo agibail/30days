@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 11 · Who's Watching</title>
+  <style>
+    :root {
+      --bg: #0b0b0c; --panel: #151517; --line: #2a2a2e; --text: #f2f2f0; --dim: #8d8d93;
+      --green: #39e27a; --amber: #ffb340; --red: #ff5a52; --mono: ui-monospace, "SF Mono", Menlo, monospace;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 -apple-system, system-ui, "Helvetica Neue", sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 56px 16px 96px; }
+    .kicker { font: 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+    h1 { font-size: clamp(44px, 11vw, 92px); line-height: .95; letter-spacing: -.045em; margin: 14px 0 18px; }
+    h1 .dot { display: inline-block; width: .16em; height: .16em; border-radius: 50%; background: var(--green); vertical-align: .62em; margin-left: .08em; box-shadow: 0 0 18px var(--green); animation: blink 2.4s infinite; }
+    @keyframes blink { 0%, 60%, 100% { opacity: 1 } 70%, 90% { opacity: .15 } }
+    .lede { font-size: 19px; color: #cfcfd2; max-width: 600px; margin: 0 0 12px; }
+    .note { font-size: 14px; color: var(--dim); max-width: 600px; margin: 0; }
+    section { margin-top: 44px; }
+    h2 { font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin: 0 0 14px; display: flex; gap: 10px; align-items: center; }
+    h2 b { color: var(--text); background: var(--line); border-radius: 4px; padding: 1px 7px; font-weight: 600; }
+    .tabs { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; margin-bottom: 14px; }
+    .tabs button { all: unset; cursor: pointer; padding: 7px 14px; border-radius: 7px; font-size: 14px; color: var(--dim); }
+    .tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); font-weight: 600; }
+    .step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    .step p { margin: 0 0 12px; font-size: 15px; color: #cfcfd2; }
+    .step p:last-child { margin-bottom: 0; }
+    kbd { font: 13px var(--mono); background: var(--line); border-radius: 4px; padding: 1px 6px; }
+    .cmd { position: relative; }
+    pre { margin: 0; background: #000; border: 1px solid var(--line); border-radius: 10px; padding: 14px 92px 14px 14px; font: 13px/1.5 var(--mono); color: var(--green); white-space: pre-wrap; word-break: break-all; }
+    .copy { position: absolute; top: 9px; right: 9px; }
+    button.btn { cursor: pointer; border: 1px solid var(--line); background: var(--line); color: var(--text); font: 600 14px -apple-system, system-ui, sans-serif; border-radius: 8px; padding: 7px 12px; }
+    button.btn:hover { background: #3a3a40; }
+    button.primary { background: var(--green); border-color: var(--green); color: #04130a; padding: 11px 20px; font-size: 15px; }
+    button.primary:hover { background: #5cf094; }
+    .range { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--dim); margin-top: 12px; }
+    select { background: var(--line); color: var(--text); border: 0; border-radius: 6px; padding: 4px 8px; font: inherit; }
+    textarea { width: 100%; min-height: 150px; resize: vertical; background: #000; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 14px; font: 12px/1.5 var(--mono); }
+    textarea:focus { outline: 2px solid var(--green); outline-offset: -1px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+    .row .hint { font-size: 13px; color: var(--dim); }
+    #results { display: none; }
+    .verdict { border-radius: 16px; padding: 22px; border: 1px solid; }
+    .verdict.ok { border-color: #1f5c38; background: #0d2016; }
+    .verdict.warn { border-color: #6b4a14; background: #221808; }
+    .verdict.none { border-color: var(--line); background: var(--panel); }
+    .verdict h3 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.02em; }
+    .verdict p { margin: 0; color: #cfcfd2; font-size: 15px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+    .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+    .stat .n { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+    .stat .l { font-size: 12px; color: var(--dim); }
+    .hours { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; align-items: end; height: 70px; margin-top: 8px; }
+    .hours div { background: var(--line); border-radius: 2px 2px 0 0; min-height: 2px; }
+    .hours div.on { background: var(--green); }
+    .hours div.night.on { background: var(--amber); }
+    .hlabels { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--dim); margin-top: 4px; }
+    .apps { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 14px; }
+    .chip small { color: var(--dim); margin-left: 6px; }
+    .chip.flag { border-color: var(--amber); }
+    .day { margin-bottom: 18px; }
+    .day h4 { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: var(--dim); }
+    .ev { display: grid; grid-template-columns: 112px 1fr auto; gap: 12px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; }
+    .ev .t { font: 13px var(--mono); color: var(--dim); }
+    .ev .a b { font-weight: 600; }
+    .ev .a code { display: block; font: 11px var(--mono); color: var(--dim); word-break: break-all; }
+    .ev .d { font: 13px var(--mono); color: var(--dim); text-align: right; white-space: nowrap; }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .tag { font: 11px var(--mono); border-radius: 4px; padding: 1px 6px; background: #3a2a0c; color: var(--amber); }
+    .tag.red { background: #3a1210; color: var(--red); }
+    .tag.green { background: #0f2a1a; color: var(--green); }
+    details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+    summary { cursor: pointer; font-weight: 600; }
+    details p, details li { color: #cfcfd2; font-size: 15px; }
+    details ul { padding-left: 20px; margin: 10px 0 0; }
+    footer { margin-top: 56px; font-size: 13px; color: var(--dim); }
+    @media (max-width: 560px) {
+      .ev { grid-template-columns: 1fr auto; }
+      .ev .t { grid-column: 1 / -1; }
+      .stats { grid-template-columns: 1fr 1fr 1fr; }
+      .stat .n { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="kicker">Day 11 · 30 Days</div>
+  <h1>Who's watching<span class="dot"></span></h1>
+  <p class="lede">Find out which apps have switched on your camera, when, and for how long, including the times you didn't notice the little green light.</p>
+  <p class="note">A web page isn't allowed to read your computer's logs, so this takes one copy and one paste. Your log stays in this tab: nothing is uploaded, saved or sent anywhere.</p>
+
+  <section>
+    <h2><b>1</b> Copy the command</h2>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-os="mac" aria-selected="true">Mac</button>
+      <button role="tab" data-os="win" aria-selected="false">Windows</button>
+    </div>
+    <div class="step" id="step-mac">
+      <p>Open <b>Terminal</b> (press <kbd>⌘ Space</kbd>, type “Terminal”, press Return), paste this, and press Return. It only reads the log: it doesn't change anything.</p>
+      <div class="cmd"><pre id="cmd-mac"></pre><button class="btn copy" data-copy="cmd-mac">Copy</button></div>
+      <div class="range">Look back
+        <select id="range">
+          <option value="1d">1 day</option>
+          <option value="3d">3 days</option>
+          <option value="7d" selected>7 days</option>
+          <option value="14d">14 days</option>
+          <option value="30d">30 days</option>
+        </select>
+        <span>· longer takes a minute to run</span>
+      </div>
+    </div>
+    <div class="step" id="step-win" hidden>
+      <p>Open <b>PowerShell</b> (press <kbd>Win</kbd>, type “PowerShell”, press Enter), paste this, and press Enter. It reads the same record Windows uses for “Recent activity” in camera privacy settings.</p>
+      <div class="cmd"><pre id="cmd-win"></pre><button class="btn copy" data-copy="cmd-win">Copy</button></div>
+      <p style="margin-top:12px;font-size:13px;color:var(--dim)">Windows keeps only the <i>most recent</i> use for each app, so you'll see one entry per app, not a full history.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><b>2</b> Paste what it printed</h2>
+    <textarea id="input" spellcheck="false" placeholder="Paste the output here…"></textarea>
+    <div class="row">
+      <button class="btn primary" id="check">Check my camera</button>
+      <button class="btn" id="example">Try an example</button>
+      <span class="hint" id="hint"></span>
+    </div>
+  </section>
+
+  <section id="results">
+    <h2><b>3</b> What we found</h2>
+    <div id="verdict"></div>
+    <div class="stats" id="stats"></div>
+
+    <section style="margin-top:28px">
+      <h2>Time of day</h2>
+      <div class="hours" id="hours"></div>
+      <div class="hlabels"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>11pm</span></div>
+    </section>
+
+    <section style="margin-top:28px">
+      <h2>Apps that used the camera</h2>
+      <div class="apps" id="apps"></div>
+    </section>
+
+    <section style="margin-top:28px">
+      <h2>Every time the camera came on</h2>
+      <div id="timeline"></div>
+    </section>
+  </section>
+
+  <section>
+    <h2>Good to know</h2>
+    <details>
+      <summary>What counts as “worth a look”?</summary>
+      <ul>
+        <li><b>App we don't recognise</b>: not one of the common video, browser or camera apps. Often harmless (a plugin or helper), but check you know what it is.</li>
+        <li><b>Late night</b>: the camera came on between midnight and 5am.</li>
+        <li><b>A few seconds</b>: on for under 10 seconds. Usually an app checking the camera works, but quick, repeated bursts are worth a second look.</li>
+        <li><b>Still on</b>: the log ends with the camera running.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>Found something you don't recognise?</summary>
+      <ul>
+        <li>Search the app ID (the grey text under the name) to see what it belongs to.</li>
+        <li><b>Mac:</b> System Settings → Privacy &amp; Security → Camera. Switch off anything you don't use.</li>
+        <li><b>Windows:</b> Settings → Privacy &amp; security → Camera. Switch apps off, and check “Recent activity”.</li>
+        <li>Remove apps you don't remember installing, update your system, and change important passwords if you're worried.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>What this can't catch</summary>
+      <p>This reads the record your operating system keeps. Logs roll over, so older activity may be gone (Macs often keep only a few days). Software with deep, system-level access could in theory hide from the log. A clean result is reassuring but not a guarantee. If you're seriously worried, a cheap camera cover is the one thing that's certain.</p>
+    </details>
+  </section>
+
+  <footer>Built for 30 Days. Runs entirely in your browser.</footer>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let os = /Win/i.test(navigator.platform || navigator.userAgent) ? 'win' : 'mac';
+
+const macCmd = (r) =>
+`/usr/bin/log show --last ${r} --style compact --predicate 'subsystem == "com.apple.controlcenter" AND category == "sensor-indicators"' | grep "Active activity attributions"`;
+const winCmd =
+`Get-ChildItem 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\webcam' -Recurse | ForEach-Object { $p = Get-ItemProperty $_.PSPath; if ($p.LastUsedTimeStart) { '{0}|{1}|{2}' -f $_.PSChildName, $p.LastUsedTimeStart, $p.LastUsedTimeStop } }`;
+
+function renderCmds() { $('#cmd-mac').textContent = macCmd($('#range').value); $('#cmd-win').textContent = winCmd; }
+renderCmds();
+$('#range').onchange = renderCmds;
+
+function setOS(o) {
+  os = o;
+  document.querySelectorAll('[role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.os === o));
+  $('#step-mac').hidden = o !== 'mac'; $('#step-win').hidden = o !== 'win';
+}
+document.querySelectorAll('[role=tab]').forEach(b => b.onclick = () => setOS(b.dataset.os));
+setOS(os);
+
+document.querySelectorAll('.copy').forEach(b => b.onclick = async () => {
+  const text = document.getElementById(b.dataset.copy).textContent;
+  try { await navigator.clipboard.writeText(text); } catch {
+    const r = document.createRange(); r.selectNodeContents(document.getElementById(b.dataset.copy));
+    getSelection().removeAllRanges(); getSelection().addRange(r); document.execCommand('copy');
+  }
+  b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500);
+});
+
+// ---------- known apps ----------
+const KNOWN = [
+  [/facetime/i, 'FaceTime'], [/photobooth|photo booth/i, 'Photo Booth'], [/zoom/i, 'Zoom'],
+  [/google\.chrome|chrome\.exe/i, 'Google Chrome'], [/safari|webkit/i, 'Safari'], [/firefox/i, 'Firefox'],
+  [/thebrowser/i, 'Arc'], [/edge|msedge/i, 'Microsoft Edge'], [/brave/i, 'Brave'],
+  [/teams/i, 'Microsoft Teams'], [/slack/i, 'Slack'], [/discord/i, 'Discord'], [/skype/i, 'Skype'],
+  [/webex|cisco/i, 'Webex'], [/obsproject|\bobs\b/i, 'OBS'], [/quicktime/i, 'QuickTime'], [/imovie/i, 'iMovie'],
+  [/whatsapp/i, 'WhatsApp'], [/telegram/i, 'Telegram'], [/signal/i, 'Signal'], [/messenger|facebook/i, 'Messenger'],
+  [/windowscamera/i, 'Windows Camera'], [/loom/i, 'Loom'], [/screenflow/i, 'ScreenFlow'], [/continuity|ccsd|deskview|desk view/i, 'Desk View / Continuity Camera'],
+  [/opera/i, 'Opera'], [/vivaldi/i, 'Vivaldi'], [/cameraHub|camo/i, 'Camo'], [/mmhmm/i, 'mmhmm'],
+  [/notion/i, 'Notion'], [/around|gather|tuple|pop\.com/i, 'Video call app'], [/controlcenter/i, 'Control Center'],
+];
+function appName(id) {
+  for (const [re, name] of KNOWN) if (re.test(id)) return { name, known: true };
+  const base = id.split(/[\\\/#]/).pop().replace(/\.exe$/i, '');
+  const parts = base.split('.');
+  let n = parts.length > 1 ? parts[parts.length - 1] : base;
+  n = n.replace(/_[a-z0-9]{13}$/i, '');
+  return { name: n.charAt(0).toUpperCase() + n.slice(1), known: false };
+}
+
+// ---------- parsing ----------
+const TS = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(\.\d+)?\s*([+-]\d{2}:?\d{2})?/;
+function parseTs(line) {
+  const m = line.match(TS); if (!m) return null;
+  let iso = `${m[1]}T${m[2]}${m[3] ? m[3].slice(0, 4) : ''}`;
+  if (m[4]) iso += m[4].includes(':') ? m[4] : m[4].slice(0, 3) + ':' + m[4].slice(3);
+  const d = new Date(iso); return isNaN(d) ? null : d;
+}
+
+function parseMac(text) {
+  const rows = [];
+  for (const line of text.split(/\r?\n/)) {
+    if (!/attributions changed|cam:/i.test(line) || /recent activity/i.test(line)) continue;
+    const t = parseTs(line); if (!t) continue;
+    const cams = new Set([...line.matchAll(/cam:([A-Za-z0-9._\-]+)/g)].map(m => m[1]));
+    rows.push({ t, cams });
+  }
+  rows.sort((a, b) => a.t - b.t);
+  const open = new Map(), sessions = [];
+  for (const { t, cams } of rows) {
+    for (const id of cams) if (!open.has(id)) open.set(id, t);
+    for (const [id, start] of [...open]) if (!cams.has(id)) { sessions.push({ id, start, end: t }); open.delete(id); }
+  }
+  for (const [id, start] of open) sessions.push({ id, start, end: null });
+  return { sessions, lines: rows.length };
+}
+
+function fromFileTime(v) {
+  const n = Number(v); if (!n) return null;
+  const d = new Date(n / 1e4 - 11644473600000);
+  return isNaN(d) || d.getFullYear() < 1990 ? null : d;
+}
+function parseWin(text) {
+  const sessions = [];
+  for (const line of text.split(/\r?\n/)) {
+    const p = line.trim().split('|'); if (p.length < 3) continue;
+    const start = fromFileTime(p[1]); if (!start) continue;
+    sessions.push({ id: p[0].replace(/#/g, '\\'), start, end: fromFileTime(p[2]), winLast: true });
+  }
+  return { sessions, lines: sessions.length };
+}
+
+// ---------- analysis + render ----------
+const fmtTime = (d) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+const fmtDay = (d) => d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+function fmtDur(ms) {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.round(s / 60); if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60); return h + 'h ' + (m % 60) + 'm';
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function analyse(sessions) {
+  return sessions.map(s => {
+    const app = appName(s.id), flags = [];
+    const h = s.start.getHours();
+    if (!app.known) flags.push(['App we don\'t recognise', '']);
+    if (h < 5) flags.push(['Late night', '']);
+    if (s.end && s.end - s.start < 10000) flags.push(['A few seconds', '']);
+    if (!s.end) flags.push(['Still on', 'red']);
+    return { ...s, app, flags };
+  }).sort((a, b) => b.start - a.start);
+}
+
+function render(list, platform) {
+  $('#results').style.display = 'block';
+  const flagged = list.filter(s => s.flags.length);
+  const apps = new Map();
+  for (const s of list) {
+    const a = apps.get(s.app.name) || { n: 0, ms: 0, known: s.app.known };
+    a.n++; if (s.end) a.ms += s.end - s.start; apps.set(s.app.name, a);
+  }
+  const total = list.reduce((t, s) => t + (s.end ? s.end - s.start : 0), 0);
+
+  let v;
+  if (!list.length) v = `<div class="verdict none"><h3>No camera use found</h3><p>Nothing in this log turned the camera on. If you expected something, try a longer look-back (Mac logs only go back a few days), or check you pasted the full output.</p></div>`;
+  else if (!flagged.length) v = `<div class="verdict ok"><h3>Nothing unusual</h3><p>Every time the camera came on, it was an app you'd expect, at a normal time. Look through the list below to make sure each one was you.</p></div>`;
+  else v = `<div class="verdict warn"><h3>${flagged.length} ${flagged.length === 1 ? 'thing' : 'things'} worth a look</h3><p>Not necessarily bad. Most turn out to be a helper app or a quick camera check. They're marked in amber below. If one wasn't you, see “Found something you don't recognise?” at the bottom.</p></div>`;
+  $('#verdict').innerHTML = v;
+
+  $('#stats').innerHTML = [
+    [list.length, platform === 'win' ? 'apps with a record' : 'times turned on'],
+    [apps.size, apps.size === 1 ? 'app' : 'apps'],
+    [platform === 'win' ? flagged.length : fmtDur(total), platform === 'win' ? 'flagged' : 'camera on in total'],
+  ].map(([n, l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+
+  const hours = new Array(24).fill(0); list.forEach(s => hours[s.start.getHours()]++);
+  const max = Math.max(1, ...hours);
+  $('#hours').innerHTML = hours.map((c, h) => `<div class="${c ? 'on' : ''} ${h < 5 ? 'night' : ''}" style="height:${c ? 12 + 88 * c / max : 3}%" title="${h}:00 · ${c} ${c === 1 ? 'time' : 'times'}"></div>`).join('');
+
+  $('#apps').innerHTML = [...apps].sort((a, b) => b[1].n - a[1].n)
+    .map(([name, a]) => `<span class="chip ${a.known ? '' : 'flag'}">${esc(name)}<small>${a.n}× ${a.ms ? '· ' + fmtDur(a.ms) : ''}</small></span>`).join('');
+
+  const byDay = new Map();
+  for (const s of list) { const k = s.start.toDateString(); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(s); }
+  $('#timeline').innerHTML = [...byDay].map(([, items]) => `
+    <div class="day"><h4>${fmtDay(items[0].start)}</h4>
+      ${items.map(s => `<div class="ev">
+        <div class="t">${fmtTime(s.start)}</div>
+        <div class="a"><b>${esc(s.app.name)}</b><code>${esc(s.id)}</code>
+          ${s.flags.length ? `<div class="tags">${s.flags.map(([f, c]) => `<span class="tag ${c}">${f}</span>`).join('')}</div>` : ''}
+          ${s.winLast ? `<div class="tags"><span class="tag green">most recent use</span></div>` : ''}
+        </div>
+        <div class="d">${s.end ? fmtDur(s.end - s.start) : 'on'}</div>
+      </div>`).join('')}
+    </div>`).join('');
+
+  $('#results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function check() {
+  const text = $('#input').value.trim();
+  if (!text) { $('#hint').textContent = 'Paste the output first.'; return; }
+  const looksWin = /\|\d{15,}\|/.test(text);
+  const platform = looksWin ? 'win' : 'mac';
+  const { sessions, lines } = looksWin ? parseWin(text) : parseMac(text);
+  if (!lines && !looksWin) {
+    $('#hint').textContent = /not recognized|cmdlet/i.test(text) ? 'That looks like a PowerShell error. Try the Windows tab.'
+      : /command not found|predicate/i.test(text) ? 'That looks like a Terminal error. Check you copied the whole command.'
+      : 'Couldn\'t find any camera lines in that. Check you pasted the command\'s output.';
+  } else $('#hint').textContent = `Read ${lines} ${lines === 1 ? 'line' : 'lines'}.`;
+  render(analyse(sessions), platform);
+}
+$('#check').onclick = check;
+
+$('#example').onclick = () => {
+  const d = (daysAgo, hh, mm, ss) => { const x = new Date(); x.setDate(x.getDate() - daysAgo); x.setHours(hh, mm, ss, 0);
+    const p = n => String(n).padStart(2, '0');
+    return `${x.getFullYear()}-${p(x.getMonth() + 1)}-${p(x.getDate())} ${p(hh)}:${p(mm)}:${p(ss)}.214`; };
+  const L = (t, list) => `${t} Df ControlCenter[412:1a2b] [com.apple.controlcenter:sensor-indicators] Active activity attributions changed to [${list.map(x => `"${x}"`).join(', ')}]`;
+  $('#input').value = [
+    L(d(5, 9, 58, 2), ['cam:us.zoom.xos', 'mic:us.zoom.xos']), L(d(5, 10, 41, 37), []),
+    L(d(4, 14, 3, 11), ['cam:com.google.Chrome']), L(d(4, 14, 3, 15), []),
+    L(d(3, 2, 47, 9), ['cam:com.vendor.helperagent']), L(d(3, 2, 47, 13), []),
+    L(d(2, 19, 30, 0), ['cam:com.apple.FaceTime', 'mic:com.apple.FaceTime']), L(d(2, 20, 12, 44), []),
+    L(d(1, 11, 0, 5), ['cam:com.apple.PhotoBooth']), L(d(1, 11, 2, 51), []),
+    L(d(0, 9, 15, 20), ['cam:com.tinyspeck.slackmacgap', 'mic:com.tinyspeck.slackmacgap']), L(d(0, 9, 31, 2), []),
+  ].join('\n');
+  check();
+};
+</script>
+</body>
+</html>

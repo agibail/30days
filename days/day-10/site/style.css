@@ -1,0 +1,485 @@
+:root {
+  --paper: #e6d9b8;
+  --paper-2: #ddcca3;
+  --paper-edge: #b99a62;
+  --ink: #26211b;
+  --ink-soft: #5a5145;
+  --block: #24201b;
+  --red: #b3261e;
+  --hi: rgba(255, 221, 0, .5);
+  --hi-cell: rgba(255, 178, 0, .78);
+  --pa: rgba(70, 140, 255, .26);
+  --pa-cell: rgba(50, 110, 240, .45);
+  --ink-a: #3d3d3d;   /* graphite pencil */
+  --ink-b: #1f3a9e;   /* blue ballpoint */
+  --ink-c: #1b6e3a;   /* green felt tip */
+  --ink-d: #6e2a86;   /* purple gel pen */
+  --ink-r: #26211b;   /* revealed (printed black) */
+  --noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .33  0 0 0 0 .25  0 0 0 0 .12  0 0 0 .5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --blotch: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='b'><feTurbulence type='fractalNoise' baseFrequency='.008' numOctaves='3' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .36  0 0 0 0 .14  0 0 0 -1.4 .75'/></filter><rect width='100%' height='100%' filter='url(%23b)'/></svg>");
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font: 15px/1.35 "PT Serif", Georgia, serif;
+  /* a scuffed dark tabletop */
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.06), transparent 60%),
+    var(--noise),
+    linear-gradient(160deg, #4a3a2c, #2b211a 70%);
+  background-color: #2f251d;
+  padding: 28px 16px 40px;
+  overflow-x: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* ---------- the book ---------- */
+.book {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 1240px;
+  margin: 0 auto;
+  transform: rotate(-.6deg);
+  filter: drop-shadow(0 18px 30px rgba(0,0,0,.55)) drop-shadow(0 2px 3px rgba(0,0,0,.4));
+}
+.page {
+  position: relative;
+  padding: 26px 34px 46px;
+  isolation: isolate;
+  min-width: 0;
+}
+/* the paper sits in ::before so the rough-edge filter never distorts the text */
+.page::before {
+  content: "";
+  position: absolute; inset: 0;
+  z-index: -2;
+  background:
+    var(--blotch),
+    var(--noise),
+    radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(150,105,40,.32) 100%),
+    var(--paper);
+  filter: url(#rough);
+}
+.page.left::before {
+  border-radius: 6px 2px 2px 10px;
+  background:
+    linear-gradient(to left, rgba(60,35,10,.38), rgba(60,35,10,.08) 4%, transparent 9%),
+    var(--blotch), var(--noise),
+    radial-gradient(ellipse at 45% 45%, transparent 45%, rgba(150,105,40,.34) 100%),
+    var(--paper);
+}
+.page.right::before {
+  border-radius: 2px 8px 6px 2px;
+  background:
+    linear-gradient(to right, rgba(60,35,10,.4), rgba(60,35,10,.08) 4%, transparent 9%),
+    var(--blotch), var(--noise),
+    radial-gradient(ellipse at 55% 45%, transparent 45%, rgba(150,105,40,.34) 100%),
+    var(--paper-2);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 54px), calc(100% - 54px) 100%, 0 100%);
+}
+/* a crease across the left page */
+.page.left::after {
+  content: "";
+  position: absolute; z-index: -1; pointer-events: none;
+  left: 0; right: 0; top: 63%; height: 3px;
+  background: linear-gradient(to bottom, rgba(255,255,255,.25), rgba(80,50,20,.18));
+  transform: rotate(-4deg);
+  opacity: .7;
+}
+
+/* right page content lives in an absolutely-placed column so the
+   left page (the grid) decides how tall the spread is */
+.page.right { padding: 0; }
+.page.right .inner {
+  position: absolute; inset: 0;
+  padding: 26px 34px 46px;
+  display: flex; flex-direction: column;
+  gap: 14px;
+}
+
+.running {
+  display: flex; justify-content: space-between; gap: 8px;
+  font: 600 10.5px/1 "Libre Franklin", sans-serif;
+  letter-spacing: .14em;
+  color: var(--ink-soft);
+  border-bottom: 1.5px solid rgba(38,33,27,.65);
+  padding-bottom: 5px;
+}
+.folio {
+  position: absolute; bottom: 16px; left: 0; right: 0;
+  text-align: center;
+  font: 600 12px "Libre Franklin", sans-serif;
+  color: var(--ink-soft);
+  letter-spacing: .1em;
+}
+
+.head { text-align: center; margin: 14px 0 10px; }
+.puzno {
+  font: 400 11px "Libre Franklin", sans-serif;
+  letter-spacing: .3em; text-transform: uppercase; color: var(--ink-soft);
+}
+.puzno b { font-weight: 900; color: var(--ink); }
+h1 {
+  font: 900 clamp(22px, 3vw, 32px)/1.05 "Libre Franklin", sans-serif;
+  letter-spacing: -.01em;
+  text-transform: uppercase;
+  margin: 4px 0 4px;
+  text-shadow: 0 0 .6px rgba(38,33,27,.8);
+}
+.byline { margin: 0; font-style: italic; color: var(--ink-soft); font-size: 13px; }
+
+/* current-clue strip, like a slip of paper tucked in */
+.cluebar {
+  display: flex; align-items: center; gap: 6px;
+  min-height: 46px;
+  margin: 0 auto 10px;
+  padding: 6px 6px;
+  background: rgba(255,252,238,.55);
+  border: 1px solid rgba(38,33,27,.25);
+  box-shadow: 1px 2px 0 rgba(60,40,10,.12);
+  transform: rotate(.35deg);
+}
+.cb-text { flex: 1; font-size: 15.5px; line-height: 1.25; }
+.cb-text b { font-family: "Libre Franklin", sans-serif; font-weight: 800; margin-right: 4px; }
+.nav {
+  border: 0; background: none; font-size: 26px; line-height: 1;
+  padding: 2px 8px; color: var(--ink-soft);
+}
+.nav:hover { color: var(--ink); }
+
+/* ---------- the grid ---------- */
+.gridwrap {
+  position: relative;
+  width: min(100%, 640px);
+  margin: 0 auto;
+  container-type: inline-size;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 15), 1fr);
+  border: 2.5px solid var(--block);
+  background: var(--block);
+  gap: 1px;
+  user-select: none; -webkit-user-select: none;
+  touch-action: manipulation;
+  box-shadow: 0 0 0 .5px rgba(38,33,27,.5);
+}
+.cell {
+  position: relative;
+  aspect-ratio: 1;
+  background: rgba(241,232,206,.96);
+  background-image: var(--noise);
+  cursor: pointer;
+  overflow: hidden;
+}
+.cell.block {
+  background-color: var(--block);
+  background-image: var(--noise), radial-gradient(circle at 30% 30%, #3a332b, var(--block));
+  cursor: default;
+}
+.cell .num {
+  position: absolute; top: 1px; left: 2px;
+  font: 600 calc(100cqw / var(--cols, 15) * .26)/1 "Libre Franklin", sans-serif;
+  color: var(--ink);
+  z-index: 2;
+}
+.cell .circ {
+  position: absolute; inset: 1px;
+  border: 1px solid rgba(38,33,27,.7);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.cell.shade .circ { border: 0; background: rgba(38,33,27,.14); }
+.cell .fill {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  padding-top: 14%;
+  font: 400 calc(100cqw / var(--cols, 15) * .66)/1 "Kalam", cursive;
+  z-index: 2;
+  white-space: nowrap;
+}
+.cell .fill.rebus { font-size: calc(100cqw / var(--cols, 15) * .3); letter-spacing: -.02em; }
+.cell .fill.ink-a { color: var(--ink-a); opacity: .9; }
+.cell .fill.ink-b { color: var(--ink-b); font-family: "Gochi Hand", cursive; }
+.cell .fill.ink-c { color: var(--ink-c); font-family: "Gochi Hand", cursive; }
+.cell .fill.ink-d { color: var(--ink-d); font-family: "Gochi Hand", cursive; }
+.cell .fill.ink-r { color: var(--ink-r); font-family: "Libre Franklin", sans-serif; font-weight: 600; font-size: calc(100cqw / var(--cols, 15) * .5); }
+.cell .fill.pencil { opacity: .42; transform: rotate(-6deg) scale(.86); }
+
+/* highlights: marker over newsprint */
+.cell::after {
+  content: ""; position: absolute; inset: 0; z-index: 1;
+  pointer-events: none; mix-blend-mode: multiply;
+}
+.cell.pword::after { background: var(--pa); }
+.cell.pcell::after { background: var(--pa-cell); }
+.cell.word::after { background: var(--hi); }
+.cell.word.pword::after { background: linear-gradient(135deg, var(--hi) 50%, var(--pa) 50%); }
+.cell.sel::after { background: var(--hi-cell); }
+.cell.sel.pcell::after { background: linear-gradient(135deg, var(--hi-cell) 50%, var(--pa-cell) 50%); }
+.cell.pcell { box-shadow: inset 0 0 0 2px var(--pcol, var(--ink-b)); }
+
+/* checked wrong: a red pen slash */
+.cell.wrong .fill::after {
+  content: ""; position: absolute;
+  left: 8%; right: 8%; top: 50%; height: 2px;
+  background: var(--red); opacity: .85;
+  transform: rotate(-38deg);
+  border-radius: 2px;
+}
+.cell.revealed::before {
+  content: ""; position: absolute; top: 0; right: 0; z-index: 3;
+  border-style: solid; border-width: 0 7px 7px 0;
+  border-color: transparent var(--red) transparent transparent;
+}
+
+.kb {
+  position: absolute; left: 0; top: 0;
+  width: 1px; height: 1px;
+  opacity: 0; border: 0; padding: 0;
+  font-size: 16px; /* stops iOS zoom */
+  caret-color: transparent;
+}
+
+.loading {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font: 22px "Kalam", cursive; color: var(--ink-soft);
+  background: rgba(230,217,184,.85);
+}
+.loading[hidden] { display: none; }
+
+/* rubber stamp */
+.stamp {
+  position: absolute; left: 50%; top: 46%;
+  transform: translate(-50%, -50%) rotate(-14deg) scale(1);
+  z-index: 5;
+  padding: 10px 26px 8px;
+  border: 5px double var(--red);
+  border-radius: 8px;
+  color: var(--red);
+  font: 900 clamp(34px, 9cqw, 64px)/1 "Libre Franklin", sans-serif;
+  letter-spacing: .12em;
+  text-align: center;
+  opacity: .82;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  background: rgba(240,228,196,.35);
+  text-shadow: 0 0 1px rgba(179,38,30,.6);
+  animation: thunk .35s cubic-bezier(.2,1.6,.4,1);
+}
+.stamp small { display: block; font: 700 .3em "Special Elite", monospace; letter-spacing: .08em; margin-top: 4px; }
+.stamp[hidden] { display: none; }
+@keyframes thunk { from { transform: translate(-50%, -50%) rotate(-14deg) scale(1.6); opacity: 0; } }
+
+/* ---------- tools ---------- */
+.tools {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 6px 8px;
+  margin: 16px auto 0;
+  max-width: 640px;
+}
+.tool {
+  font: 600 12px "Libre Franklin", sans-serif;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 6px 10px;
+  border: 1.5px solid var(--ink);
+  background: rgba(255,250,232,.35);
+  border-radius: 2px;
+}
+.tool:hover { background: rgba(255,250,232,.7); }
+.tool[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.timer {
+  font: 18px "Special Elite", monospace;
+  margin-right: 6px; min-width: 64px; text-align: center;
+}
+.menu { position: relative; }
+.pop {
+  position: absolute; bottom: calc(100% + 4px); left: 0; z-index: 20;
+  display: none; flex-direction: column;
+  background: #f3ead2; border: 1.5px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(38,33,27,.25);
+  min-width: 110px;
+}
+.pop.open { display: flex; }
+.pop button {
+  border: 0; background: none; text-align: left;
+  padding: 7px 12px; font: 14px "PT Serif", serif;
+}
+.pop button:hover { background: var(--hi); }
+
+/* ---------- partner card ---------- */
+.card {
+  position: relative;
+  align-self: flex-end;
+  width: min(100%, 330px);
+  margin-top: 4px;
+  padding: 14px 16px 12px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 21px, rgba(70,120,190,.35) 21px 22px),
+    linear-gradient(to bottom, transparent 30px, rgba(200,60,60,.45) 30px 31px, transparent 31px),
+    #f6f0de;
+  background-position: 0 9px, 0 0, 0 0;
+  box-shadow: 2px 3px 6px rgba(40,25,5,.3);
+  transform: rotate(1.6deg);
+  font-size: 14px;
+}
+.tape {
+  position: absolute; top: -11px; left: 50%;
+  width: 92px; height: 24px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(245,238,200,.62);
+  box-shadow: 0 1px 2px rgba(0,0,0,.12);
+  border-left: 1px dashed rgba(0,0,0,.08);
+  border-right: 1px dashed rgba(0,0,0,.08);
+}
+.card-head { display: flex; align-items: center; gap: 8px; font: 700 13px "Libre Franklin", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #9a8f7d; flex: none; }
+.dot.wait { background: #d79b16; animation: blink 1.2s infinite; }
+.dot.live { background: #2f9a48; }
+@keyframes blink { 50% { opacity: .3; } }
+.hand { font: 19px/1.1 "Kalam", cursive; color: var(--ink-a); margin: 10px 0 8px; }
+.stampbtn {
+  font: 800 13px "Libre Franklin", sans-serif;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--red);
+  background: none;
+  border: 2.5px solid var(--red);
+  border-radius: 4px;
+  padding: 7px 12px;
+  transform: rotate(-1.5deg);
+}
+.stampbtn:hover { background: rgba(179,38,30,.08); }
+.stampbtn.small { font-size: 11.5px; padding: 5px 9px; transform: none; }
+.room { font: 12px "Libre Franklin", sans-serif; letter-spacing: .12em; text-transform: uppercase; margin: 8px 0 6px; color: var(--ink-soft); }
+.room b { font: 22px "Special Elite", monospace; color: var(--ink); letter-spacing: .1em; margin-left: 6px; }
+.linkrow { display: flex; gap: 6px; }
+.linkrow input {
+  flex: 1; min-width: 0;
+  font: 13px "Special Elite", monospace;
+  border: 0; border-bottom: 1px solid var(--ink-soft);
+  background: transparent; color: var(--ink);
+  padding: 4px 2px;
+}
+.who { list-style: none; margin: 10px 0 0; padding: 0; font: 18px/1.25 "Kalam", cursive; }
+.who li span { display: inline-block; width: 26px; height: 3px; vertical-align: middle; margin-right: 8px; border-radius: 2px; }
+
+/* ---------- clues ---------- */
+.clues {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+}
+.col { display: flex; flex-direction: column; min-height: 0; }
+.col h2 {
+  margin: 0 0 6px;
+  font: 900 14px "Libre Franklin", sans-serif;
+  letter-spacing: .2em;
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 3px;
+}
+.col ol {
+  list-style: none; margin: 0; padding: 0 6px 0 0;
+  overflow-y: auto; flex: 1; min-height: 0;
+  scrollbar-width: thin; scrollbar-color: rgba(38,33,27,.4) transparent;
+}
+.col li {
+  display: flex; gap: 6px;
+  padding: 2.5px 4px;
+  font-size: 13.5px; line-height: 1.28;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.col li b { font: 700 12.5px/1.45 "Libre Franklin", sans-serif; min-width: 22px; text-align: right; }
+.col li.cur { background: var(--hi); }
+.col li.cross { background: rgba(255,221,0,.2); }
+.col li.partner { border-left-color: var(--pcol, var(--ink-b)); }
+.col li.done span { color: rgba(38,33,27,.5); }
+
+/* ---------- picker ---------- */
+.picker {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  border-top: 1.5px solid rgba(38,33,27,.65);
+  padding-top: 10px;
+  font: 600 11px "Libre Franklin", sans-serif;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.pk-date { display: flex; align-items: center; gap: 8px; }
+.pk-date input {
+  font: 14px "Special Elite", monospace;
+  background: rgba(255,250,232,.5);
+  border: 1px solid rgba(38,33,27,.5);
+  color: var(--ink);
+  padding: 3px 5px;
+}
+.pk-random { display: flex; align-items: center; gap: 3px; margin-left: auto; }
+.pk-random span { margin-right: 4px; }
+.pk-random button {
+  width: 24px; height: 24px; padding: 0;
+  border: 1.5px solid var(--ink); border-radius: 50%;
+  background: transparent;
+  font: 800 11px "Libre Franklin", sans-serif;
+}
+.pk-random button:hover { background: var(--ink); color: var(--paper); }
+
+/* ---------- desk decor ---------- */
+.coffee {
+  position: absolute; width: 230px; height: 230px;
+  right: -40px; top: 34%;
+  pointer-events: none; mix-blend-mode: multiply; z-index: 4;
+}
+.dogear {
+  position: absolute; right: 0; bottom: 0;
+  width: 54px; height: 54px;
+  background: linear-gradient(135deg, #cdb98c 0%, #e3d4ad 48%, transparent 50%);
+  filter: drop-shadow(-2px -2px 2px rgba(40,25,5,.3));
+  pointer-events: none;
+}
+.smudge {
+  position: absolute; z-index: -1; pointer-events: none;
+  border-radius: 50%;
+  background: rgba(70,65,60,.13);
+  filter: blur(9px);
+}
+.s1 { width: 120px; height: 34px; left: 6%; bottom: 70px; transform: rotate(-12deg); }
+.s2 { width: 70px; height: 22px; right: 12%; top: 120px; transform: rotate(20deg); background: rgba(70,65,60,.09); }
+
+.colophon {
+  max-width: 900px; margin: 26px auto 0;
+  text-align: center;
+  font: 12px/1.5 "PT Serif", serif; color: rgba(240,225,195,.6);
+}
+.colophon a { color: rgba(240,225,195,.85); }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; z-index: 50;
+  transform: translateX(-50%) rotate(-1deg);
+  background: #f6f0de; color: var(--ink);
+  padding: 9px 16px;
+  font: 18px "Kalam", cursive;
+  box-shadow: 2px 4px 12px rgba(0,0,0,.35);
+  max-width: calc(100vw - 32px);
+}
+.toast[hidden] { display: none; }
+
+/* ---------- small screens: one page at a time ---------- */
+@media (max-width: 900px) {
+  body { padding: 12px 16px 30px; }
+  .book { grid-template-columns: 1fr; transform: none; }
+  .page { padding: 18px 14px 44px; }
+  .page.left::before { border-radius: 4px 4px 0 0; }
+  .page.left::after { display: none; }
+  .page.right { padding: 0; }
+  .page.right .inner { position: static; padding: 18px 14px 60px; }
+  .page.right::before { background: var(--blotch), var(--noise), var(--paper-2); }
+  .clues { grid-template-columns: 1fr; }
+  .col ol { max-height: 40vh; }
+  .card { align-self: center; }
+  .cluebar { position: sticky; top: 4px; z-index: 10; background: #f3ead0; transform: none; }
+  .coffee { width: 150px; height: 150px; right: -30px; top: 50px; }
+  .running span:last-child { text-align: right; }
+}
