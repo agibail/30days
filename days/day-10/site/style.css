@@ -8,8 +8,8 @@
   --red: #b3261e;
   --hi: rgba(255, 221, 0, .5);
   --hi-cell: rgba(255, 178, 0, .78);
-  --pa: rgba(70, 140, 255, .26);
-  --pa-cell: rgba(50, 110, 240, .45);
+  --pa: color-mix(in srgb, var(--pcol, #1f3a9e) 24%, transparent);
+  --pa-cell: color-mix(in srgb, var(--pcol, #1f3a9e) 42%, transparent);
   --ink-a: #3d3d3d;   /* graphite pencil */
   --ink-b: #1f3a9e;   /* blue ballpoint */
   --ink-c: #1b6e3a;   /* green felt tip */
@@ -204,10 +204,10 @@ h1 {
   white-space: nowrap;
 }
 .cell .fill.rebus { font-size: calc(100cqw / var(--cols, 15) * .3); letter-spacing: -.02em; }
-.cell .fill.ink-a { color: var(--ink-a); opacity: .9; }
-.cell .fill.ink-b { color: var(--ink-b); font-family: "Gochi Hand", cursive; }
-.cell .fill.ink-c { color: var(--ink-c); font-family: "Gochi Hand", cursive; }
-.cell .fill.ink-d { color: var(--ink-d); font-family: "Gochi Hand", cursive; }
+.cell .fill.hand-a { font-family: "Kalam", cursive; }
+.cell .fill.hand-b, .cell .fill.hand-c, .cell .fill.hand-d { font-family: "Gochi Hand", cursive; }
+.cell .fill.hand-c { transform: rotate(-3deg); }
+.cell .fill.hand-d { transform: rotate(3deg); }
 .cell .fill.ink-r { color: var(--ink-r); font-family: "Libre Franklin", sans-serif; font-weight: 600; font-size: calc(100cqw / var(--cols, 15) * .5); }
 .cell .fill.pencil { opacity: .42; transform: rotate(-6deg) scale(.86); }
 
@@ -483,3 +483,24 @@ h1 {
   .coffee { width: 150px; height: 150px; right: -30px; top: 50px; }
   .running span:last-child { text-align: right; }
 }
+
+/* ---------- pen picker ---------- */
+.pens { display: flex; align-items: center; gap: 6px; margin: 10px 0 2px; flex-wrap: wrap; }
+.pens > span { font: 600 11px "Libre Franklin", sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); margin-right: 2px; }
+.pen {
+  position: relative;
+  width: 24px; height: 24px; padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.55);
+  background: var(--c);
+  box-shadow: 0 0 0 1px rgba(38,33,27,.35), inset -3px -3px 0 rgba(0,0,0,.18);
+  transition: transform .12s;
+}
+.pen:hover { transform: scale(1.12); }
+.pen[aria-pressed="true"] { box-shadow: 0 0 0 2px #f6f0de, 0 0 0 4px var(--c); transform: scale(1.08); }
+.pen.theirs::after {
+  content: ""; position: absolute; right: -4px; top: -4px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #f6f0de; border: 2px solid var(--c);
+}
+.who li { color: var(--c); }

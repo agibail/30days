@@ -1,5 +1,5 @@
 ---
-title: X Marks the Spot
+title: XXX Marks the Spot
 date: 2026-11-07
 type: website
 ---

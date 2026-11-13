@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "gallery", "runtimeExecutable": "./30", "runtimeArgs": ["serve"], "port": 8030 }
+    { "name": "gallery", "runtimeExecutable": "./30", "runtimeArgs": ["serve"], "port": 8030 },
+    { "name": "day10-scratch", "runtimeExecutable": "/usr/bin/ruby", "runtimeArgs": ["-run", "-e", "httpd", "/private/tmp/claude-501/-Users-abigailvelazco--claude-spares-spare-0Nlesr/4433524e-a4f1-4275-bee0-9b386d7fc494/scratchpad/serve", "-p", "8031"], "port": 8031 }
   ]
 }

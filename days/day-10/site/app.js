@@ -8,8 +8,11 @@
   const MIN_DATE = '1976-01-01', MAX_DATE = '2018-12-31';
   const PEER_PREFIX = 'thirtydays-xword-';
   const INKS = ['a', 'b', 'c', 'd'];
-  const INK_NAMES = { a: 'graphite pencil', b: 'blue ballpoint', c: 'green felt tip', d: 'purple gel pen' };
-  const INK_COLORS = { a: '#3d3d3d', b: '#1f3a9e', c: '#1b6e3a', d: '#6e2a86' };
+  // pen colours anyone can pick; slots (a–d) are players and decide the handwriting
+  const PENS = { black: '#1d1b19', red: '#c0281f', pink: '#e0418a', orange: '#e2700a', green: '#1f7a3c', blue: '#1f3a9e', purple: '#6e2a86' };
+  const PEN_ORDER = ['black', 'red', 'pink', 'orange', 'green', 'blue', 'purple'];
+  const DEFAULT_PEN = { a: 'black', b: 'blue', c: 'green', d: 'purple' };
+  const LEGACY = { a: '#3d3d3d', b: '#1f3a9e', c: '#1b6e3a', d: '#6e2a86' }; // fills saved before pens existed
   const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -22,7 +25,7 @@
     stampTime: $('#stampTime'), loading: $('#loading'), dateIn: $('#dateIn'),
     pencilBtn: $('#pencilBtn'), toast: $('#toast'), dot: $('#dot'), statusText: $('#statusText'),
     soloBox: $('#soloBox'), roomBox: $('#roomBox'), roomCode: $('#roomCode'), roomLink: $('#roomLink'),
-    who: $('#who'),
+    who: $('#who'), pens: $('#pens'),
   };
 
   // ---------- state ----------
@@ -33,6 +36,12 @@
   let myInk = 'a';
   let elapsed = 0, tickFrom = null, solved = false;
   const partners = {};    // ink -> {i, dir}
+  const pens = {};        // ink -> pen name
+  let myPen = null;       // chosen pen (also remembered in localStorage)
+  const penOf = (ink) => pens[ink] || DEFAULT_PEN[ink] || 'black';
+  const colorOf = (ink) => PENS[penOf(ink)];
+  const fillColor = (f) => PENS[f.by] || LEGACY[f.by] || '';
+  const allPens = () => Object.assign({}, pens, { [myInk]: penOf(myInk) });
 
   // ---------- small utils ----------
   const store = {
@@ -231,13 +240,14 @@
       d.classList.toggle('word', wset.has(i));
       d.classList.toggle('pword', pw.has(i));
       d.classList.toggle('pcell', pc.has(i));
-      if (pc.has(i) || pw.has(i)) d.style.setProperty('--pcol', INK_COLORS[pc.get(i) || pw.get(i)]);
+      if (pc.has(i) || pw.has(i)) d.style.setProperty('--pcol', colorOf(pc.get(i) || pw.get(i)));
       d.classList.toggle('wrong', !!f && f.m === 'wrong');
       d.classList.toggle('revealed', !!f && f.m === 'revealed');
       const span = d.lastChild;
       const v = f ? f.v : '';
       if (span.textContent !== v) span.textContent = v;
-      span.className = 'fill' + (f ? ` ink-${f.by}${f.p ? ' pencil' : ''}${v.length > 1 ? ' rebus' : ''}` : '');
+      span.className = 'fill' + (f ? ` ${f.by === 'r' ? 'ink-r' : 'hand-' + (f.s || f.by)}${f.p ? ' pencil' : ''}${v.length > 1 ? ' rebus' : ''}` : '');
+      span.style.color = f && f.by !== 'r' ? fillColor(f) : '';
     });
     // clues
     const cross = wordAt(sel.i, sel.dir === 'across' ? 'down' : 'across');
@@ -248,7 +258,7 @@
       li.classList.toggle('cur', !!w && word.id === w.id);
       li.classList.toggle('cross', !!cross && word.id === cross.id);
       li.classList.toggle('partner', pWords.has(word.id));
-      if (pWords.has(word.id)) li.style.setProperty('--pcol', INK_COLORS[pWords.get(word.id)]);
+      if (pWords.has(word.id)) li.style.setProperty('--pcol', colorOf(pWords.get(word.id)));
       li.classList.toggle('done', word.cells.every((ci) => fills[ci] && fills[ci].v));
     }
     if (w) {
@@ -325,7 +335,7 @@
   }
   function typeLetter(v) {
     if (!puz || locked(sel.i)) { advance(); return; }
-    put([[sel.i, { v, by: myInk, p: pencil || undefined }]]);
+    put([[sel.i, { v, by: penOf(myInk), s: myInk, p: pencil || undefined }]]);
     advance();
   }
   function backspace() {
@@ -338,7 +348,7 @@
     if (!puz) return;
     const cur = fills[sel.i] ? fills[sel.i].v : '';
     const v = (prompt('Rebus — several letters in this square:', cur) || '').toUpperCase().replace(/[^A-Z0-9&]/g, '');
-    if (!locked(sel.i)) put([[sel.i, v ? { v, by: myInk, p: pencil || undefined } : null]]);
+    if (!locked(sel.i)) put([[sel.i, v ? { v, by: penOf(myInk), s: myInk, p: pencil || undefined } : null]]);
     focusKb();
   }
   const correct = (i) => {
@@ -496,7 +506,7 @@
     clearTimeout(cursorT);
     cursorT = setTimeout(() => send({ t: 'cursor', ink: myInk, i: sel.i, dir: sel.dir }), 40);
   }
-  function syncMsg() { return { t: 'sync', date: puz && puz.date, fills, elapsed: currentElapsed(), cursors: Object.assign({ [myInk]: { i: sel.i, dir: sel.dir } }, partners) }; }
+  function syncMsg() { return { t: 'sync', date: puz && puz.date, fills, elapsed: currentElapsed(), cursors: Object.assign({ [myInk]: { i: sel.i, dir: sel.dir } }, partners), pens: allPens() }; }
   function sendSync() { if (puz && peerCount()) send(syncMsg()); }
 
   async function onMessage(msg, from) {
@@ -509,8 +519,18 @@
       partners[msg.ink] = { i: msg.i, dir: msg.dir };
       paint();
       if (role === 'host') send(msg, from);
+    } else if (msg.t === 'pen' && PENS[msg.color]) {
+      if (msg.ink !== myInk) pens[msg.ink] = msg.color;
+      paint(); renderPens(); renderWho();
+      if (role === 'host') send(msg, from);
     } else if (msg.t === 'sync' && msg.date) {
-      if (msg.you) { myInk = msg.you; renderWho(); }
+      if (msg.pens) for (const ink in msg.pens) if (ink !== msg.you && ink !== myInk && PENS[msg.pens[ink]]) pens[ink] = msg.pens[ink];
+      if (msg.you) {
+        myInk = msg.you;
+        if (myPen) pens[myInk] = myPen; else delete pens[myInk];
+        send({ t: 'pen', ink: myInk, color: penOf(myInk) });
+        renderPens(); renderWho();
+      }
       if (msg.cursors) for (const ink in msg.cursors) if (ink !== myInk) partners[ink] = msg.cursors[ink];
       if (puz && puz.date === msg.date) {
         fills = msg.fills.slice(); elapsed = msg.elapsed || 0; tickFrom = Date.now();
@@ -523,7 +543,9 @@
       if (role === 'host') send(Object.assign({}, msg, { you: undefined }), from);
       if (from === host) sendCursor();
     } else if (msg.t === 'who' && role === 'guest') {
-      whoList = msg.inks || []; renderWho();
+      whoList = msg.inks || [];
+      if (msg.pens) for (const ink in msg.pens) if (ink !== myInk && PENS[msg.pens[ink]]) pens[ink] = msg.pens[ink];
+      renderWho(); renderPens(); paint();
     } else if (msg.t === 'left') {
       delete partners[msg.ink]; paint();
     }
@@ -535,16 +557,45 @@
     el.who.innerHTML = '';
     whoList.forEach((ink) => {
       const li = document.createElement('li');
-      const sw = document.createElement('span'); sw.style.background = INK_COLORS[ink];
-      li.append(sw, `${ink === myInk ? 'you' : 'partner'} — ${INK_NAMES[ink]}`);
-      li.style.color = INK_COLORS[ink];
+      const sw = document.createElement('span'); sw.style.background = colorOf(ink);
+      li.append(sw, `${ink === myInk ? 'you' : 'partner'} — ${penOf(ink)} pen`);
+      li.style.setProperty('--c', colorOf(ink));
       el.who.appendChild(li);
     });
     const n = peerCount();
     el.dot.className = 'dot ' + (n ? 'live' : 'wait');
     el.statusText.textContent = n ? (n === 1 ? 'Solving with a friend' : `Solving with ${n} friends`) : role === 'guest' ? 'Reconnecting…' : 'Waiting for your partner…';
   }
-  function broadcastWho() { if (role === 'host') { renderWho(); send({ t: 'who', inks: whoList }); } }
+  function broadcastWho() { if (role === 'host') { renderWho(); send({ t: 'who', inks: whoList, pens: allPens() }); } }
+
+  // ---------- pen picker ----------
+  const penBtns = PEN_ORDER.map((name) => {
+    const b = document.createElement('button');
+    b.className = 'pen'; b.type = 'button';
+    b.setAttribute('aria-label', name[0].toUpperCase() + name.slice(1) + ' pen');
+    b.style.setProperty('--c', PENS[name]);
+    b.addEventListener('click', () => choosePen(name));
+    el.pens.appendChild(b);
+    return b;
+  });
+  function renderPens() {
+    const others = role === 'host' ? [...conns].map((c) => c.ink) : role === 'guest' ? whoList.filter((k) => k !== myInk) : [];
+    const theirs = new Set(others.map(penOf));
+    PEN_ORDER.forEach((name, k) => {
+      const b = penBtns[k];
+      b.setAttribute('aria-pressed', String(penOf(myInk) === name));
+      b.classList.toggle('theirs', theirs.has(name));
+      b.title = b.getAttribute('aria-label') + (theirs.has(name) ? ' (your partner is using this one)' : '');
+    });
+  }
+  function choosePen(name) {
+    myPen = name; pens[myInk] = name; store.set('pen', name);
+    send({ t: 'pen', ink: myInk, color: name });
+    renderPens(); renderWho(); focusKb();
+  }
+  myPen = PENS[store.get('pen')] ? store.get('pen') : null;
+  if (myPen) pens[myInk] = myPen;
+  renderPens();
 
   function showRoom() {
     el.soloBox.hidden = true; el.roomBox.hidden = false;
@@ -571,6 +622,7 @@
       let opened = false;
       p.on('open', () => {
         opened = true; peer = p; role = 'host'; room = code; myInk = 'a';
+        if (myPen) pens.a = myPen; else delete pens.a;
         showRoom(); resolve();
       });
       p.on('connection', (c) => {
@@ -580,12 +632,13 @@
           conns.add(c);
           if (puz) c.send(Object.assign(syncMsg(), { you: c.ink }));
           broadcastWho();
-          toast(`Your partner is here — they write in ${INK_NAMES[c.ink]}.`);
+          renderPens();
+          toast('Your partner is here. Pick your pens!');
         });
         c.on('data', (m) => onMessage(m, c));
         c.on('close', () => {
           if (!conns.delete(c)) return;
-          delete partners[c.ink]; send({ t: 'left', ink: c.ink }); paint(); broadcastWho();
+          delete partners[c.ink]; delete pens[c.ink]; renderPens(); send({ t: 'left', ink: c.ink }); paint(); broadcastWho();
           toast('Your partner closed the book.');
         });
       });
