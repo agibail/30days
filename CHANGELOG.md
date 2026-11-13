@@ -3,6 +3,7 @@
 Every change to the 30 Days project, newest first. Entries are added by `./30 save`.
 
 <!-- new entries go below this line -->
+- 2026-11-12 20:52 · **Day 08** · Memory Box: write a memory on an index card and slide it into a locked black metal box (button, Cmd+Enter, or drag it up to the slot); turn the key to read what's inside
 - 2026-11-12 20:27 · **Day 06** · Rename to Mani Machine with a Rubik Mono One title; use only my hands photo (no uploads) and drop the Hold: original button
 - 2026-11-12 20:11 · **Day 14** · Rename to "in my grocery bag"
 - 2026-11-12 20:09 · **Day 09** · 1970s Times Square signage: flickering red neon XXX, marquee-bulb lettering, chasing light-bulb borders and neon-tube headings

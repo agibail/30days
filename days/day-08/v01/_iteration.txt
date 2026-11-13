@@ -1,0 +1,1 @@
+2026-11-12 20:52	Memory Box: write a memory on an index card and slide it into a locked black metal box (button, Cmd+Enter, or drag it up to the slot); turn the key to read what's inside
