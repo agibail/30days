@@ -3,6 +3,7 @@
 Every change to the 30 Days project, newest first. Entries are added by `./30 save`.
 
 <!-- new entries go below this line -->
+- 2026-11-12 19:54 · **Day 14** · Cheapest Cart NYC: type your grocery list and see the cheapest NYC supermarket, the best two-stop split and the rock-bottom total, across 13 chains with a borough filter and editable estimated prices
 - 2026-11-12 19:52 · **Day 13** · Bored or Busy: a friend map where a yellow ring means bored and open to hang out and a purple ring means busy, with notes, timers, waves and an Only bored filter
 - 2026-11-12 19:50 · **Day 11** · Who's Watching: paste one command from Terminal or PowerShell and see every time an app turned on your camera, with odd ones flagged; runs fully in the browser
 - 2026-11-12 19:50 · **Day 10** · Crossword Together: solve NYT archive crosswords (1976–2018) with a friend over a shared link, in a worn newsprint crossword book
