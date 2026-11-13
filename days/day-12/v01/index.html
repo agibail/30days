@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 12 · Art Recipe Box</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Special+Elite&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --desk: #e8dfcd;
+      --desk-2: #ddd2bb;
+      --kraft: #c69c6d;
+      --kraft-dark: #9c7346;
+      --kraft-edge: #7d5a35;
+      --manila: #f0d99c;
+      --manila-dark: #d9bd76;
+      --card: #fffdf6;
+      --rule: #b7d0e8;
+      --margin: #e58a8c;
+      --ink: #2a2830;
+      --ink-soft: #5d5966;
+      --pencil: #b3262e;
+      --red: #c8262f;
+      --red-dark: #8e161d;
+      --red-deep: #5e0d12;
+      --line: 28px;
+      --type: "Special Elite", "Courier New", monospace;
+      --body: "Courier Prime", "Courier New", monospace;
+      --hand: "Caveat", "Bradley Hand", cursive;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font: 17px/var(--line) var(--body);
+      background:
+        radial-gradient(1200px 600px at 50% -10%, #f3ecdd 0%, transparent 70%),
+        repeating-linear-gradient(92deg, transparent 0 38px, rgba(120, 90, 50, .035) 38px 40px, transparent 40px 91px),
+        var(--desk);
+      overflow-x: hidden;
+    }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    main { max-width: 760px; margin: 0 auto; padding: 28px 16px 160px; }
+
+    /* ---------- index card ---------- */
+    .card {
+      position: relative;
+      background:
+        linear-gradient(var(--card), var(--card)) top / 100% 64px no-repeat,
+        linear-gradient(var(--margin), var(--margin)) 0 63px / 100% 2px no-repeat,
+        repeating-linear-gradient(to bottom, transparent 0 calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px) var(--line)) 0 64px / 100% 100%,
+        var(--card);
+      border-radius: 4px;
+      box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 10px 24px -12px rgba(60, 40, 10, .45), 0 2px 6px rgba(60, 40, 10, .12);
+      padding: 0 24px 28px;
+    }
+    .card-head {
+      height: 64px;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+      padding-bottom: 10px;
+    }
+    .card-head h1, .card-head h2 {
+      font: 400 clamp(22px, 5.4vw, 32px)/1.1 var(--type);
+      margin: 0; letter-spacing: .01em;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .no { font: 13px/1 var(--type); color: var(--ink-soft); white-space: nowrap; padding-bottom: 4px; }
+    .stamp {
+      display: inline-block;
+      font: 12px/1 var(--type); text-transform: uppercase; letter-spacing: .12em;
+      color: var(--pencil); border: 1.5px solid currentColor; border-radius: 3px;
+      padding: 4px 6px 3px; transform: rotate(-3deg); opacity: .85;
+    }
+
+    /* ---------- ask card ---------- */
+    .ask { margin-bottom: 36px; transform: rotate(-.6deg); }
+    .ask form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 12px; margin-top: var(--line); }
+    .ask label { font-family: var(--type); white-space: nowrap; line-height: var(--line); }
+    .ask input {
+      flex: 1 1 220px; min-width: 0;
+      border: 0; background: transparent; outline: none;
+      font: 700 22px/var(--line) var(--body); height: var(--line);
+      padding: 0 2px; color: #1d3f8f;
+    }
+    .ask input::placeholder { color: #a7a2ad; font-weight: 400; }
+    .btn {
+      font: 15px/1 var(--type); letter-spacing: .04em;
+      border: 1.5px solid var(--ink); background: transparent; border-radius: 3px;
+      padding: 7px 12px 6px; height: var(--line); margin-top: 0;
+      transition: background .15s, color .15s, transform .1s;
+    }
+    .btn:hover { background: var(--ink); color: var(--card); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, .chip:focus-visible, .tab:focus-visible, .strip:focus-visible, .tin:focus-visible { outline: 2px dashed #1d3f8f; outline-offset: 3px; }
+    .try { margin: var(--line) 0 0; color: var(--ink-soft); }
+    .chip {
+      border: 0; background: none; padding: 0; margin: 0 2px;
+      font: 700 17px/var(--line) var(--hand); font-size: 21px; color: var(--pencil);
+      text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+    }
+    .chip:hover { color: var(--ink); }
+
+    /* ---------- pulled (result) card ---------- */
+    #pulled { position: relative; z-index: 3; margin-bottom: 44px; }
+    #pulled:empty { display: none; }
+    .result { animation: pull .55s cubic-bezier(.2, .9, .25, 1.05) both; }
+    @keyframes pull {
+      from { transform: translateY(120px) rotate(1.2deg); opacity: 0; }
+      60% { opacity: 1; }
+      to { transform: translateY(0) rotate(.4deg); }
+    }
+    .result .meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: var(--line); margin-top: 0; }
+    .result h3 {
+      font: 400 15px/var(--line) var(--type); text-transform: uppercase; letter-spacing: .12em;
+      margin: var(--line) 0 0; color: var(--ink-soft);
+    }
+    .result ul, .result ol { margin: 0; padding-left: 26px; }
+    .result ul.materials { columns: 2 220px; column-gap: 28px; list-style: "– "; }
+    .result ul.materials li { break-inside: avoid; }
+    .result ol li::marker { font-family: var(--type); color: var(--ink-soft); }
+    .result p { margin: 0; }
+    .desc { color: var(--ink-soft); font-style: italic; }
+    .note {
+      font: 600 23px/var(--line) var(--hand); color: var(--pencil);
+      margin-top: var(--line) !important; transform: rotate(-.4deg);
+    }
+    .note b { font-weight: 700; }
+    .guides { list-style: none !important; padding-left: 0 !important; }
+    .guides a {
+      text-decoration: underline; text-decoration-color: var(--rule); text-decoration-thickness: 2px; text-underline-offset: 4px;
+    }
+    .guides a:hover { text-decoration-color: var(--pencil); color: var(--pencil); }
+    .guides .main-link a { font-weight: 700; color: #1d3f8f; }
+    .also { color: var(--ink-soft); }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: var(--line); align-items: center; }
+    .save {
+      font: 15px/1 var(--type); letter-spacing: .05em;
+      background: var(--red); color: #fff; border: 0; border-radius: 3px;
+      height: var(--line); padding: 0 14px;
+      box-shadow: 0 2px 0 var(--red-dark);
+      transition: transform .1s, background .15s;
+    }
+    .save:hover { background: #d7323b; }
+    .save:active { transform: translateY(2px); box-shadow: none; }
+    .save.saved { background: transparent; color: var(--red); box-shadow: inset 0 0 0 1.5px var(--red); }
+    .linkish { border: 0; background: none; padding: 0; font: 15px/var(--line) var(--type); color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+    .linkish:hover { color: var(--ink); }
+
+    /* ---------- the box ---------- */
+    .box-wrap { position: relative; z-index: 1; padding-top: 56px; }
+    .box {
+      position: relative;
+      background: linear-gradient(#6f4f2d, #8a6640);
+      border-radius: 8px 8px 0 0;
+      padding: 0 14px;
+    }
+    .box::before { /* back wall rim */
+      content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 16px;
+      background: linear-gradient(var(--kraft-dark), var(--kraft-edge));
+      border-radius: 8px 8px 0 0;
+    }
+    .tabs {
+      position: relative; z-index: 1;
+      display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto;
+      margin: -52px -4px 0; padding: 18px 4px 0;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 0 0 auto;
+      font: 14px/1 var(--type); letter-spacing: .04em;
+      background: linear-gradient(var(--manila), #ead08a);
+      border: 0; border-radius: 6px 6px 0 0;
+      padding: 9px 12px 30px;
+      box-shadow: inset 0 -1px 0 var(--manila-dark), 0 -1px 2px rgba(0,0,0,.12);
+      transform: translateY(calc(-1 * var(--lift, 0px)));
+      transition: transform .2s;
+    }
+    .tab:nth-child(3n+2) { --lift: 7px; }
+    .tab:nth-child(3n) { --lift: 13px; }
+    .tab:hover { transform: translateY(calc(-1 * var(--lift, 0px) - 4px)); }
+    .tab[aria-selected="true"] { transform: translateY(calc(-1 * var(--lift, 0px) - 4px)); background: linear-gradient(#fbe8b3, var(--manila)); font-weight: 700; }
+    .divider-body {
+      position: relative; z-index: 2;
+      background: linear-gradient(#fbe8b3, var(--manila));
+      border-radius: 0 4px 0 0;
+      height: 22px; margin: -14px 0 0;
+      box-shadow: 0 -2px 3px rgba(0,0,0,.12);
+    }
+    .strips { position: relative; z-index: 2; padding: 0 6px 120px; margin-bottom: -112px; }
+    .strip {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      width: 100%; text-align: left;
+      height: 40px; margin-top: -2px;
+      border: 0; border-radius: 3px 3px 0 0;
+      padding: 0 14px;
+      background:
+        linear-gradient(var(--margin), var(--margin)) 0 38px / 100% 2px no-repeat,
+        var(--card);
+      box-shadow: 0 -3px 5px -2px rgba(50, 30, 5, .35);
+      font: 16px/1 var(--type);
+      transition: transform .18s ease;
+    }
+    .strip:hover { transform: translateY(-8px); }
+    .strip small { font: 12px/1 var(--type); color: var(--ink-soft); }
+    .box-front {
+      position: relative; z-index: 3;
+      margin: 0 -14px;
+      height: 150px;
+      background:
+        radial-gradient(140% 90% at 50% 0%, rgba(255,255,255,.18), transparent 60%),
+        repeating-linear-gradient(90deg, rgba(90,60,25,.05) 0 2px, transparent 2px 7px),
+        linear-gradient(var(--kraft), #b88b5b);
+      border-radius: 4px 4px 10px 10px;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.25), inset 0 -8px 12px rgba(80,50,20,.25), 0 18px 30px -14px rgba(60,40,10,.6);
+      display: grid; place-items: center;
+    }
+    .label-holder {
+      background: linear-gradient(#d9d7d2, #a9a6a0);
+      padding: 6px; border-radius: 4px;
+      box-shadow: 0 2px 3px rgba(0,0,0,.3), inset 0 1px 0 #fff;
+      transform: translateY(-6px);
+    }
+    .label-holder span {
+      display: block; background: var(--card); padding: 6px 18px 5px;
+      font: 15px/1.2 var(--type); letter-spacing: .14em; text-transform: uppercase;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.25);
+    }
+    .pull-hole { width: 54px; height: 18px; border-radius: 0 0 30px 30px; background: rgba(60,35,10,.35); position: absolute; top: 0; left: 50%; transform: translateX(-50%); box-shadow: inset 0 3px 4px rgba(0,0,0,.35); }
+    .box-caption { text-align: center; color: var(--ink-soft); font: 20px/1.2 var(--hand); margin-top: 18px; }
+
+    /* ---------- the red box (closed tin) ---------- */
+    .tin {
+      position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 20;
+      width: 132px; height: 92px; border: 0; padding: 0;
+      background: none;
+      filter: drop-shadow(0 10px 12px rgba(80, 10, 10, .35));
+      transition: transform .2s;
+    }
+    .tin:hover { transform: translateY(-4px) rotate(-1deg); }
+    .tin .lid {
+      position: absolute; left: -4px; right: -4px; top: 0; height: 26px;
+      background: linear-gradient(#e0434b, var(--red) 55%, #a91c24);
+      border-radius: 6px 6px 3px 3px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+    }
+    .tin .lid::after { content: ""; position: absolute; left: 50%; top: 9px; width: 30px; height: 6px; margin-left: -15px; border-radius: 4px; background: #e9e5df; box-shadow: inset 0 -1px 1px rgba(0,0,0,.3); }
+    .tin .body {
+      position: absolute; left: 0; right: 0; top: 24px; bottom: 0;
+      background: linear-gradient(var(--red), #b31f28);
+      border-radius: 2px 2px 8px 8px;
+      display: grid; place-items: center;
+    }
+    .tin .tag { background: var(--card); color: var(--ink); font: 12px/1 var(--type); letter-spacing: .12em; padding: 5px 9px 4px; border-radius: 2px; text-transform: uppercase; }
+    .tin .count {
+      position: absolute; top: -10px; right: -10px; min-width: 28px; height: 28px; padding: 0 6px;
+      border-radius: 14px; background: var(--card); color: var(--red-dark);
+      font: 700 15px/28px var(--body); text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,.3);
+    }
+    .tin.bump { animation: bump .5s ease; }
+    @keyframes bump { 30% { transform: translateY(-10px) rotate(-3deg); } 60% { transform: translateY(2px) rotate(2deg); } }
+
+    /* ---------- the red box (open) ---------- */
+    .overlay {
+      position: fixed; inset: 0; z-index: 30;
+      background: rgba(60, 12, 14, .82);
+      display: block;
+      padding: 16px;
+      overflow-y: auto;
+      animation: fade .2s ease both;
+    }
+    .overlay[hidden] { display: none; }
+    @keyframes fade { from { opacity: 0; } }
+    .redbox { width: min(760px, 100%); margin: 24px auto 40px; animation: rise .35s cubic-bezier(.2,.9,.3,1) both; }
+    @keyframes rise { from { transform: translateY(60px); opacity: 0; } }
+    .redbox-top { display: flex; justify-content: space-between; align-items: end; gap: 12px; color: #fff; margin-bottom: 18px; }
+    .redbox-top h2 { margin: 0; font: 400 28px/1.1 var(--type); }
+    .redbox-top p { margin: 4px 0 0; font: 20px/1.2 var(--hand); opacity: .85; }
+    .close { background: var(--card); color: var(--ink); border: 0; border-radius: 3px; font: 15px/1 var(--type); padding: 8px 12px; }
+    #redView:empty { display: none; }
+    #redView { position: relative; z-index: 3; margin-top: 28px; }
+    .redbox .box { background: linear-gradient(var(--red-deep), #7a1218); padding-top: 22px; }
+    .redbox .box::before { background: linear-gradient(var(--red-dark), #6f1016); }
+    .redbox .box-front { background: radial-gradient(140% 90% at 50% 0%, rgba(255,255,255,.22), transparent 60%), linear-gradient(var(--red), #a91c24); height: 90px; }
+    .redbox .strips { padding-top: 6px; }
+    .empty-red { color: #f5d9d9; font: 22px/1.3 var(--hand); text-align: center; padding: 26px 10px 130px; margin-bottom: -112px; position: relative; z-index: 2; }
+
+    /* flying card */
+    .flyer { position: fixed; z-index: 40; pointer-events: none; border-radius: 4px; background: var(--card); box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+
+    @media (max-width: 520px) {
+      .card { padding: 0 16px 28px; }
+      .tin { width: 104px; height: 76px; }
+      .tin .lid { height: 22px; }
+      .tin .body { top: 20px; }
+      .tin .tag { font-size: 10px; }
+      .strip small { display: none; }
+    }
+    @media print {
+      body { background: #fff; }
+      main > *:not(#pulled), .tin, .actions { display: none !important; }
+      .overlay:not([hidden]) { position: static; background: none; padding: 0; }
+      body:has(.overlay:not([hidden])) main, .redbox-top, .redbox .box { display: none !important; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card ask" aria-labelledby="title">
+      <div class="card-head">
+        <h1 id="title">Art Recipe Box</h1>
+        <span class="no">Day 12</span>
+      </div>
+      <form id="askForm" autocomplete="off">
+        <label for="q">Technique:</label>
+        <input id="q" name="q" type="text" placeholder="e.g. egg tempera" enterkeyhint="search" required>
+        <button class="btn" type="submit">Look it up</button>
+      </form>
+      <p class="try">Try:
+        <button class="chip" type="button">cyanotype</button>,
+        <button class="chip" type="button">paper marbling</button>,
+        <button class="chip" type="button">walnut ink</button>,
+        <button class="chip" type="button">shibori</button>,
+        <button class="chip" type="button">salt dough</button>, or
+        <button class="chip" type="button" data-random>surprise me</button>
+      </p>
+    </section>
+
+    <section id="pulled" aria-live="polite"></section>
+
+    <section class="box-wrap" aria-label="Every card in the box">
+      <div class="box">
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <div class="divider-body"></div>
+        <div class="strips" id="strips"></div>
+        <div class="box-front"><span class="pull-hole"></span><div class="label-holder"><span id="boxLabel">Techniques</span></div></div>
+      </div>
+      <p class="box-caption">Pick a divider, then pull a card. Anything not in the box, I'll go find.</p>
+    </section>
+  </main>
+
+  <button class="tin" id="tin" type="button" aria-label="Open your red box of saved cards">
+    <span class="lid"></span>
+    <span class="body"><span class="tag">Saved</span></span>
+    <span class="count" id="count">0</span>
+  </button>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="redbox" role="dialog" aria-modal="true" aria-labelledby="redTitle">
+      <div class="redbox-top">
+        <div>
+          <h2 id="redTitle">My Red Box</h2>
+          <p id="redSub">Directions you've kept.</p>
+        </div>
+        <button class="close" id="closeRed" type="button">Close ✕</button>
+      </div>
+      <div class="box">
+        <div class="strips" id="redStrips"></div>
+        <div class="box-front"><div class="label-holder"><span>Keep</span></div></div>
+      </div>
+      <div id="redView"></div>
+    </div>
+  </div>
+
+<script>
+/* ============================================================
+   The card file. Every card: name, category, aliases (what people
+   might type), what you need, directions, a pencilled note.
+   ============================================================ */
+const CATS = [
+  ["paint", "Paint"], ["draw", "Draw & Ink"], ["print", "Print"], ["paper", "Paper"],
+  ["fiber", "Fiber & Dye"], ["clay", "Clay & Cast"], ["photo", "Photo"], ["wax", "Wax & Gold"]
+];
+
+const CARDS = [
+  { name: "Cyanotype", cat: "photo", aliases: ["cyanotypes", "sun print", "sun printing", "blueprint", "blue print"],
+    yields: "About 40 postcard-size prints",
+    need: ["25 g ferric ammonium citrate (green)", "10 g potassium ferricyanide", "200 ml distilled water", "2 brown glass bottles", "Heavy watercolor paper", "Foam brush", "Sheet of glass", "Gloves"],
+    steps: ["Solution A: dissolve the ferric ammonium citrate in 100 ml water. Solution B: dissolve the potassium ferricyanide in 100 ml water. Let both rest 24 hours.",
+      "In dim light, mix equal parts A and B — only what you'll use today.",
+      "Brush an even coat onto the paper and let it dry flat in the dark.",
+      "Lay leaves, lace or a printed negative on the paper and press flat under glass.",
+      "Set it in full sun for 5–20 minutes, until the exposed paper turns bronze-grey.",
+      "Rinse in cool running water about 5 minutes, until the whites clear. Dry flat — the blue deepens overnight."],
+    note: "Gloves on, and keep these bottles away from kitchen things. A splash of hydrogen peroxide in the rinse makes the blue jump instantly." },
+
+  { name: "Egg Tempera", cat: "paint", aliases: ["tempera", "egg paint", "egg yolk paint"],
+    need: ["1 fresh egg", "Dry pigments", "Distilled water", "Palette knife", "Glass or ceramic palette", "Small round brushes", "A gessoed wooden panel"],
+    steps: ["Separate the egg and roll the yolk on a paper towel to dry its skin.",
+      "Pinch the yolk sac over a small jar, pierce it, and let the yolk run out. Toss the sac.",
+      "Stir in about the same amount of water. That's your medium.",
+      "Grind each pigment with a little water into a smooth paste.",
+      "On the palette, mix roughly equal parts paste and medium. Test a swatch — dry, it shouldn't rub off or crack.",
+      "Paint in thin layers with small hatched strokes, building color slowly."],
+    note: "Make it fresh each day — it spoils. Only paint on something rigid; it cracks on canvas." },
+
+  { name: "Watercolor Paint", cat: "paint", aliases: ["watercolour", "watercolors", "homemade watercolor", "watercolor", "pan paint"],
+    need: ["Gum arabic (powder or liquid)", "Honey or glycerin", "Dry pigments", "Distilled water", "Glass muller & slab (or palette knife & glass)", "Empty half pans", "Dust mask"],
+    steps: ["If using powder, dissolve 1 part gum arabic in 2 parts hot water and let it sit overnight.",
+      "Binder: stir 4 parts gum arabic solution with 1 part honey or glycerin. A drop of clove oil keeps it from molding.",
+      "Pile about a teaspoon of pigment on the slab and add binder a little at a time.",
+      "Mull in slow circles until it's smooth and glossy, like toothpaste.",
+      "Scrape into pans, filling in two or three layers and letting each dry.",
+      "Let the pans cure 1–2 days before painting."],
+    note: "Wear a mask while handling dry pigment, and never use a muller you eat with." },
+
+  { name: "Oil Paint", cat: "paint", aliases: ["oil paints", "homemade oil paint", "mulling paint", "make oil paint"],
+    need: ["Dry pigment", "Refined or cold-pressed linseed oil", "Glass muller & slab", "Palette knife", "Empty paint tubes", "Dust mask, gloves"],
+    steps: ["Pile pigment on the slab and make a small well in the middle.",
+      "Add oil a few drops at a time, folding with the knife into a stiff paste.",
+      "Mull in figure-eights for 5–10 minutes until buttery and smooth.",
+      "Add oil only if it's crumbly — too much makes paint runny and slow to dry.",
+      "Fill a tube from the open back end, tap it down, and fold the end over twice."],
+    note: "Some pigments are toxic (cadmiums, cobalts, leads). Mask on, gloves on, wipe the slab with a rag, not the sink." },
+
+  { name: "Traditional Gesso", cat: "paint", aliases: ["gesso", "rabbit skin glue gesso", "chalk gesso", "panel prep"],
+    need: ["Rabbit skin glue granules", "Whiting (calcium carbonate / chalk)", "Water", "Double boiler", "Wooden panel", "Wide flat brush", "Fine sandpaper"],
+    steps: ["Soak 1 part glue in 10 parts water (by weight) overnight.",
+      "Warm gently in a double boiler until clear. Never let it boil.",
+      "Brush a coat of plain warm glue onto the panel to size it. Let dry.",
+      "Sift whiting into the warm glue until it's like light cream — roughly equal volumes.",
+      "Brush on 6–8 thin coats, switching direction each time, adding the next once the last loses its shine.",
+      "Dry overnight, then sand glassy-smooth."],
+    note: "Keep the pot warm while you work or it jells. For a quick version: acrylic gesso from a tub." },
+
+  { name: "Fresco", cat: "paint", aliases: ["buon fresco", "wall painting", "lime plaster painting", "mural plaster"],
+    need: ["Aged lime putty", "Coarse and fine sand", "Trowel", "A wall or cement board", "Lime-safe pigments", "Brushes", "Gloves & goggles"],
+    steps: ["Dampen the surface and trowel on a rough coat (arriccio): 1 part lime putty to 3 parts coarse sand. Let it cure.",
+      "Transfer your drawing onto the rough coat.",
+      "Each day, plaster only what you can paint: a smooth coat (intonaco) of 1 part lime to 1–2 parts fine sand.",
+      "Mix pigments with water only — the lime is the glue.",
+      "Paint while the plaster is still damp, usually within a few hours.",
+      "At day's end, cut away any plaster you didn't paint."],
+    note: "Lime is caustic. Gloves and goggles, always." },
+
+  { name: "Chalk Paint", cat: "paint", aliases: ["chalk-style paint", "furniture paint", "diy chalk paint"],
+    need: ["1 cup flat latex paint", "⅓ cup plaster of Paris", "⅓ cup cool water", "Container & stir stick", "Brush", "Furniture wax or clear coat"],
+    steps: ["Stir the plaster into the water until there are no lumps.",
+      "Pour that into the paint and stir thoroughly.",
+      "Brush onto furniture — no sanding or primer needed.",
+      "Dry about an hour, then add a second coat.",
+      "Distress edges with sandpaper if you like, then seal with wax or clear coat."],
+    note: "Mix only what you'll use today — the plaster sets in the jar." },
+
+  { name: "Black Walnut Ink", cat: "draw", aliases: ["walnut ink", "homemade ink", "ink", "natural ink", "foraged ink"],
+    need: ["10–15 black walnut hulls (green or black)", "Water", "An old pot", "Strainer & cloth", "White vinegar", "Salt", "Glass jars", "Gloves"],
+    steps: ["Put the hulls in the pot and cover with water.",
+      "Simmer for several hours (or soak for a week) until the liquid is very dark.",
+      "Strain through cloth.",
+      "Simmer it down further for a deeper brown.",
+      "Per cup, add 1 tbsp vinegar and 1 tsp salt to keep it from molding.",
+      "Bottle it. A pinch of gum arabic adds gloss and body."],
+    note: "Stains everything — hands, counters, pots. Use a pot you'll never cook in again." },
+
+  { name: "Iron Gall Ink", cat: "draw", aliases: ["oak gall ink", "gall ink", "medieval ink", "calligraphy ink"],
+    need: ["Oak galls", "Ferrous sulfate", "Gum arabic", "Distilled water", "Mortar & pestle", "Jar, coffee filter"],
+    steps: ["Crush the galls into coarse powder.",
+      "Soak in water for a few days (or simmer an hour), then strain.",
+      "Dissolve ferrous sulfate in a little water and stir it in — the liquid turns black. Aim for about 3 parts gall : 2 parts iron : 1 part gum by weight.",
+      "Stir in the gum arabic.",
+      "Let it rest a day, strain again, and bottle."],
+    note: "It writes pale and darkens as it dries. Rinse steel nibs afterward — it's mildly corrosive." },
+
+  { name: "Soft Pastels", cat: "draw", aliases: ["pastel", "pastels", "homemade pastels", "chalk pastels"],
+    need: ["Dry pigment", "Whiting (chalk)", "Methyl cellulose", "Water", "Glass slab & palette knife", "Newsprint", "Dust mask"],
+    steps: ["Binder: stir 1 tsp methyl cellulose into about a cup of water and let it swell overnight.",
+      "Mix pigment with whiting to set the value — more chalk makes a lighter tint.",
+      "Add binder a few drops at a time and knead into a stiff, clay-like dough.",
+      "Roll into sticks on newsprint.",
+      "Dry 2–3 days. Crumbly? Add more binder next batch. Too hard? Less."],
+    note: "Make a tint ladder: same pigment, five chalk ratios." },
+
+  { name: "Vine Charcoal", cat: "draw", aliases: ["charcoal", "willow charcoal", "make charcoal", "drawing charcoal"],
+    need: ["Straight willow or grapevine sticks", "A metal tin with a lid", "Nail", "Campfire or grill", "Tongs"],
+    steps: ["Peel the bark and cut sticks to fit the tin.",
+      "Pack them in tightly and punch one small hole in the lid.",
+      "Set the tin in hot coals. Smoke or small flames will jet from the hole — that's gas escaping.",
+      "When the smoke stops (30–60 minutes), pull the tin out with tongs.",
+      "Let it cool completely before opening — opening it hot can make it ignite."],
+    note: "Good charcoal snaps cleanly and draws a soft black." },
+
+  { name: "Paper Marbling", cat: "paper", aliases: ["marbling", "marbled paper", "ebru", "water marbling", "marble paper"],
+    need: ["Carrageenan powder", "Alum", "Water, blender", "Shallow tray", "Acrylic paints", "Ox gall (optional)", "Droppers, a stylus, a comb", "Paper & newspaper strips"],
+    steps: ["Blend 2 tbsp carrageenan into 1 gallon of water. Let it rest 12 hours.",
+      "Dissolve 1 tbsp alum in 1 cup warm water, sponge onto one side of each sheet, mark that side, and let dry.",
+      "Thin paints to the consistency of milk. If a color sinks, add a drop of ox gall.",
+      "Pour the size into the tray and skim the surface with a newspaper strip.",
+      "Drop and flick colors so they float and spread, then rake and comb into patterns.",
+      "Lay the paper alum-side down, lift, rinse gently, and dry flat."],
+    note: "Skim between every print. First pull is always a test." },
+
+  { name: "Suminagashi", cat: "paper", aliases: ["japanese marbling", "ink marbling", "floating ink"],
+    need: ["Sumi or suminagashi ink", "Two brushes", "Shallow tray of water", "A few drops of dish soap in a cup of water", "Absorbent paper (rice paper)"],
+    steps: ["Fill the tray with still, room-temperature water.",
+      "Load one brush with ink and the other with soapy water.",
+      "Touch the ink brush to the surface — a ring spreads.",
+      "Touch the soap brush to the center to push it outward. Alternate dozens of times.",
+      "Breathe or fan gently across the rings to swirl them.",
+      "Lay paper down, lift, and dry flat."],
+    note: "Patience. Barely touch the water." },
+
+  { name: "Handmade Paper", cat: "paper", aliases: ["papermaking", "paper making", "recycled paper", "make paper", "pulp paper"],
+    need: ["Scrap paper (not glossy)", "Blender", "A tub (the vat)", "Mould & deckle (two frames + window screen)", "Felts or old towels", "Sponge", "Boards and a weight"],
+    steps: ["Tear paper into small bits and soak a few hours.",
+      "Blend a handful with lots of water for about 30 seconds into pulp.",
+      "Pour pulp into the vat of water and stir.",
+      "Hold the deckle on the mould, dip in vertically, scoop to level, lift straight up, and give a gentle side-to-side shake.",
+      "Remove the deckle, flip the mould onto a damp felt, sponge the back, and lift it away.",
+      "Stack sheets between felts, press under boards, then dry flat or on a window."],
+    note: "Stir in petals, thread or seeds for texture." },
+
+  { name: "Papier-Mâché", cat: "clay", aliases: ["paper mache", "papier mache", "paper-mache", "mache paste", "flour paste"],
+    need: ["Flour", "Water", "Salt", "Newspaper torn into strips", "Bowl", "A form (balloon, wire, cardboard)"],
+    steps: ["Mix 1 part flour to 1 part water with a pinch of salt, until it's like pancake batter.",
+      "Tear newspaper into 1-inch strips — tearing feathers the edges so they blend.",
+      "Dip a strip, then run it between two fingers to squeeze off the extra.",
+      "Lay strips over the form, overlapping and crossing directions.",
+      "Build 3–4 layers, letting it dry after every two.",
+      "Dry 24 hours, sand lightly, prime white, and paint."],
+    note: "The salt keeps it from going moldy." },
+
+  { name: "Pamphlet Stitch", cat: "paper", aliases: ["bookbinding", "book binding", "zine binding", "saddle stitch", "bind a book", "three hole binding"],
+    need: ["Folded pages + a cover", "Awl or push pin", "Needle", "Waxed thread, 3× the spine length", "Bone folder", "Binder clip"],
+    steps: ["Fold the pages and cover, nest them, and clip together.",
+      "Mark three holes along the fold: the center, and 1 inch from each end. Pierce from the inside.",
+      "From inside, go out through the center hole, leaving a tail.",
+      "Come back in through the top hole.",
+      "Skip the center and go out through the bottom hole.",
+      "Come back in through the center, on the opposite side of the long stitch from your tail. Tie a square knot over the long stitch and trim."],
+    note: "Five holes for anything taller than a zine." },
+
+  { name: "Decoupage", cat: "paper", aliases: ["mod podge", "homemade mod podge", "collage glue", "napkin decoupage"],
+    need: ["White PVA glue", "Water", "Jar with lid", "Foam brush", "Napkins, magazine or tissue paper", "Your object"],
+    steps: ["Mix 2 parts glue to 1 part water in a jar — that's homemade Mod Podge.",
+      "Cut or tear your images.",
+      "Brush a thin layer onto the surface.",
+      "Lay the paper down and smooth bubbles out from the center with your fingers or a card.",
+      "Brush a coat over the top. Dry 15–20 minutes.",
+      "Add three or more top coats, drying between each."],
+    note: "Paper napkins: peel off the printed top ply only." },
+
+  { name: "Linocut", cat: "print", aliases: ["lino print", "linoleum print", "block printing", "block print", "relief print", "stamp carving"],
+    need: ["Linoleum block (or soft-cut block)", "Lino cutters (V and U gouges)", "Block printing ink", "Brayer", "Sheet of glass", "Paper", "Baren or wooden spoon"],
+    steps: ["Draw your design on the block — it prints in reverse.",
+      "Fill in with marker the areas that should print. Cut away everything else.",
+      "Cut away from your hand in shallow strokes. A bench hook helps.",
+      "Roll ink on glass until it hisses softly, then roll a thin even coat onto the block.",
+      "Lay paper on top and rub firmly in circles with the baren or spoon.",
+      "Peel back a corner to check, then pull the print and dry it flat."],
+    note: "Warm the lino on a radiator — it cuts like butter." },
+
+  { name: "Gel Plate Printing", cat: "print", aliases: ["gelli plate", "gel printing", "gelatin print", "monoprint", "monotype", "gelatin plate"],
+    need: ["About 8 tbsp unflavored gelatin", "1 cup glycerin", "1 cup boiling water", "Flat dish or tray", "Acrylic paint", "Brayer", "Paper, leaves, stencils"],
+    steps: ["Pour the glycerin into a bowl and sprinkle the gelatin over it; stir to wet.",
+      "Add the boiling water and stir slowly (no bubbles) until dissolved.",
+      "Pour into the dish and pop bubbles with a toothpick. Let it set firm, ideally overnight.",
+      "Roll a thin layer of acrylic onto the plate.",
+      "Press in leaves, stencils or textures, lay paper on top, rub, and pull.",
+      "Pull a second 'ghost' print before re-inking."],
+    note: "Store it covered. If it tears, melt it and pour again." },
+
+  { name: "Hoop Screen Printing", cat: "print", aliases: ["screen printing", "screenprint", "silkscreen", "silk screen", "screen print"],
+    need: ["Embroidery hoop", "Sheer curtain fabric or organza", "Mod Podge", "Brush, pencil", "Screen printing ink", "An old card as a squeegee", "T-shirt or paper"],
+    steps: ["Stretch the fabric drum-tight in the hoop, flat against the bottom edge.",
+      "Trace your design onto the fabric.",
+      "Paint Mod Podge over every area that should NOT print. Hold it to the light and fill any pinholes. Dry; second coat.",
+      "Put cardboard inside the shirt. Set the hoop flat side down.",
+      "Spoon ink along the top and pull it across firmly at a 45° angle, 2–3 times. Lift.",
+      "Heat-set fabric ink with an iron, and wash the screen right away."],
+    note: "Simple bold shapes print best." },
+
+  { name: "Image Transfer", cat: "print", aliases: ["photo transfer", "gel medium transfer", "transfer print", "mod podge transfer"],
+    need: ["Laser print or photocopy (not inkjet), mirrored", "Matte gel medium (or Mod Podge)", "Wood, canvas or paper", "Brush", "Sponge & water"],
+    steps: ["Print your image mirrored on a laser printer.",
+      "Brush a thick, even layer of gel medium on the surface.",
+      "Lay the image face down and smooth bubbles out from the center.",
+      "Let it dry overnight.",
+      "Dampen the paper and gently rub the fibers away with your fingertips.",
+      "Repeat until the image is clear, dry, and seal with another coat of medium."],
+    note: "Rub too hard and you'll take the image too. Go slow at the edges." },
+
+  { name: "Natural Dye (Onion Skins)", cat: "fiber", aliases: ["natural dye", "natural dyeing", "onion skin dye", "plant dye", "botanical dye", "dye fabric", "onion dye"],
+    need: ["Dry onion skins, equal weight to your fabric", "Natural fiber (wool, silk, cotton)", "Alum", "Stainless pot (not for food)", "Strainer", "Scale"],
+    steps: ["Weigh the dry fiber and wash it well.",
+      "Mordant: dissolve alum at 10–15% of the fiber's weight in hot water, add the wet fiber, and keep hot (not boiling) for an hour.",
+      "Simmer the onion skins in water for an hour, then strain.",
+      "Add the wet, mordanted fiber and simmer gently for an hour.",
+      "Let it cool in the bath overnight for deeper color.",
+      "Rinse until clear and dry in the shade."],
+    note: "Avocado pits give pink, turmeric gives yellow. Dye pots are never cooking pots again." },
+
+  { name: "Shibori", cat: "fiber", aliases: ["indigo", "indigo dye", "tie dye", "tie-dye", "itajime", "arashi"],
+    need: ["Cotton or linen fabric", "Rubber bands, string", "Wooden blocks or clamps", "Indigo kit (indigo, reducer, soda ash)", "Bucket with lid", "Gloves"],
+    steps: ["Wash the fabric and leave it damp.",
+      "Fold and bind: accordion-fold then clamp between blocks (itajime), wrap around a pole and scrunch (arashi), or pinch and band small points (kumo).",
+      "Make the vat per the kit. It's ready when there's a coppery foam 'flower' on top and the liquid is yellow-green.",
+      "Lower the fabric in gently and hold it under 1–3 minutes without splashing.",
+      "Lift out — it's green, and turns blue in the air over 20 minutes. Dip again for darker.",
+      "Unbind, rinse and wash."],
+    note: "Splashing adds oxygen and tires the vat. Move slowly." },
+
+  { name: "Batik", cat: "wax", aliases: ["wax resist", "wax resist dye", "tjanting"],
+    need: ["Cotton fabric", "Wax (half beeswax, half paraffin — or soy wax)", "Wax pot or double boiler", "Tjanting tool or brushes", "Cold-water fiber-reactive dye", "Iron & newspaper"],
+    steps: ["Wash the fabric.",
+      "Melt the wax until it soaks through the cloth (the fabric turns translucent).",
+      "Draw with wax anywhere that should stay the fabric's color.",
+      "Dye in your lightest color, then dry.",
+      "Wax what should stay that color, and dye the next darker one.",
+      "Remove wax by ironing between layers of newspaper, then wash hot."],
+    note: "Never leave hot wax alone, and keep it below smoking. Crumple waxed cloth for crackle." },
+
+  { name: "Wet Felting", cat: "fiber", aliases: ["felting", "felt", "felt making", "wool felt"],
+    need: ["Merino wool roving", "Bubble wrap", "Hot soapy water", "Tulle or netting", "Towel", "Spray bottle"],
+    steps: ["Lay bubble wrap bubbles-up and pull thin wisps of wool into one layer, all one direction.",
+      "Add 2–3 more layers, each crosswise to the last. Lay colored wool on top for a design.",
+      "Cover with netting, sprinkle with hot soapy water, and press until wet through.",
+      "Rub through the net in small circles for 5–10 minutes.",
+      "Roll it up in the bubble wrap 100 times, turning a quarter-turn between sets.",
+      "When fibers don't lift when pinched, rinse cold, roll in a towel, and dry."],
+    note: "It shrinks 20–40%. Lay out bigger than you want." },
+
+  { name: "Embroidery Basics", cat: "fiber", aliases: ["embroidery", "hand embroidery", "stitching", "backstitch", "french knot", "satin stitch"],
+    need: ["Embroidery hoop", "Cotton fabric", "Embroidery floss", "Embroidery needle", "Small scissors", "Water-soluble pen"],
+    steps: ["Draw your design and hoop the fabric drum-tight.",
+      "Cut 18 inches of floss, separate 2–3 strands, and knot one end.",
+      "Backstitch for lines: come up one stitch ahead, go down at the end of the last.",
+      "Satin stitch to fill: lay straight stitches side by side.",
+      "French knot: wrap twice around the needle, go down right beside where you came up, holding tension.",
+      "Finish by weaving under stitches on the back instead of knotting."],
+    note: "Shorter thread = fewer tangles." },
+
+  { name: "Eco Printing", cat: "fiber", aliases: ["leaf printing", "bundle dye", "bundle dyeing", "botanical print", "botanical printing", "leaf print"],
+    need: ["Fresh leaves (eucalyptus, oak, maple, rose)", "Silk or wool (or alum-mordanted cotton)", "Alum", "A wooden dowel or copper pipe", "String", "Steamer pot", "Vinegar"],
+    steps: ["Mordant the fabric with alum (about 10% of its weight).",
+      "Soak the leaves in water with a splash of vinegar.",
+      "Arrange leaves on half the fabric, then fold the other half over.",
+      "Roll tightly around the dowel and bind with string.",
+      "Steam for 1–2 hours, then let it rest overnight.",
+      "Unroll, brush off the leaves, and wait a few days before a gentle wash."],
+    note: "Tighter roll = sharper leaf veins." },
+
+  { name: "Salt Dough", cat: "clay", aliases: ["salt dough ornaments", "bread dough clay", "baked dough"],
+    yields: "About 20 ornaments",
+    need: ["2 cups flour", "1 cup salt", "About ¾ cup warm water", "Rolling pin", "Baking sheet & parchment", "Straw for hanging holes"],
+    steps: ["Mix the flour and salt.",
+      "Add water gradually and knead 5–10 minutes until smooth.",
+      "Roll about ¼ inch thick, cut shapes, and poke hanging holes.",
+      "Bake at 250°F (120°C) for 2–3 hours until hard — thicker pieces take longer. Or air-dry for several days.",
+      "Cool, paint with acrylics, and seal with varnish."],
+    note: "Not food. Keep away from dogs — the salt is dangerous for them." },
+
+  { name: "Air-Dry Clay", cat: "clay", aliases: ["homemade clay", "baking soda clay", "cornstarch clay", "air dry clay", "cold porcelain"],
+    need: ["1 cup baking soda", "½ cup cornstarch", "¾ cup water", "Saucepan", "Damp towel"],
+    steps: ["Whisk the baking soda, cornstarch and water in the pan before turning on the heat.",
+      "Cook over medium-low, stirring constantly.",
+      "When it thickens like mashed potatoes (5–10 minutes), take it off the heat.",
+      "Cover with a damp towel and let it cool, then knead smooth.",
+      "Shape, roll or stamp. Air-dry 24–48 hours, flipping halfway.",
+      "Paint and seal. Keep extra in an airtight bag."],
+    note: "Comes out bright white — great for little dishes and tags." },
+
+  { name: "Plaster Casting", cat: "clay", aliases: ["plaster of paris", "plaster cast", "casting", "plaster mold", "cast plaster"],
+    need: ["Plaster of Paris", "Water", "A mold (silicone, or a clay or sand impression)", "Disposable bowl & stick", "Petroleum jelly (release)", "Dust mask"],
+    steps: ["Coat any rigid mold with petroleum jelly so the cast releases.",
+      "Measure water first — about 1 part water to 2 parts plaster by volume.",
+      "Sift the plaster into the water until little islands form just under the surface. Let it sit 1–2 minutes.",
+      "Stir gently from the bottom for about 2 minutes, without whipping in air, until it's like heavy cream.",
+      "Pour into the mold and tap the sides to raise bubbles.",
+      "It warms as it sets. Demold after 30–60 minutes and let it dry for days."],
+    note: "Never cast hands or body parts in plaster — it gets hot enough to burn. Never pour it down a drain." },
+
+  { name: "Playdough", cat: "clay", aliases: ["play dough", "playdoh", "play-doh", "modeling dough", "modelling dough"],
+    need: ["1 cup flour", "½ cup salt", "2 tsp cream of tartar", "1 tbsp oil", "1 cup water", "Food coloring", "Saucepan"],
+    steps: ["Whisk the flour, salt and cream of tartar in the pan.",
+      "Add water, oil and coloring and stir.",
+      "Cook over medium-low, stirring constantly, 3–5 minutes until it pulls into a ball.",
+      "Turn it out, let it cool a bit, and knead smooth.",
+      "Store airtight."],
+    note: "A few drops of lavender oil make it smell nice." },
+
+  { name: "Sidewalk Chalk", cat: "draw", aliases: ["homemade chalk", "chalk", "chalk sticks"],
+    need: ["¾ cup plaster of Paris", "½ cup warm water", "2–3 tbsp tempera paint", "Disposable cup", "Silicone molds or lined toilet-paper tubes"],
+    steps: ["Stir the paint into the water.",
+      "Sift in the plaster and stir until smooth.",
+      "Pour into molds and tap out bubbles.",
+      "Let set an hour, then demold.",
+      "Dry 24–48 hours before using."],
+    note: "Swirl two colors in the mold for marbled sticks." },
+
+  { name: "Encaustic Painting", cat: "wax", aliases: ["encaustic", "encaustic medium", "wax painting", "beeswax painting", "hot wax painting"],
+    need: ["Pure filtered beeswax", "Damar resin crystals", "Pigment or oil paint", "Griddle with temperature control", "Small metal tins", "Natural bristle brushes", "Rigid wood panel", "Heat gun"],
+    steps: ["Medium: melt 8 parts beeswax with 1 part damar (by weight) in a tin on the griddle, around 200°F (93°C). Strain out debris.",
+      "Color: in small tins, mix medium with pigment or a little oil paint.",
+      "Brush a few clear coats on the panel, fusing each with the heat gun until it just glistens.",
+      "Paint in layers, fusing between every one.",
+      "Scrape, incise, or embed paper between layers.",
+      "Buff with a soft cloth once cool."],
+    note: "Ventilate. Keep the wax under about 220°F — if it smokes, it's too hot." },
+
+  { name: "Kintsugi", cat: "wax", aliases: ["gold repair", "golden repair", "golden joinery", "kintsukuroi", "broken pottery gold"],
+    need: ["Broken ceramic", "Two-part clear epoxy", "Gold mica powder", "Toothpicks", "Fine brush", "Painter's tape", "Rubbing alcohol"],
+    steps: ["Clean and dry the pieces, then dry-fit them.",
+      "Mix a small batch of epoxy and stir in gold mica powder.",
+      "Apply thinly to one broken edge, press the pieces together, and tape.",
+      "Wipe squeeze-out with alcohol before it cures. Let it cure 24 hours.",
+      "Paint a raised gold line along each seam with more epoxy-gold mix.",
+      "Fill chips by building up the mix in thin layers."],
+    note: "This DIY version is decorative only — not food-safe. Traditional kintsugi uses urushi lacquer." },
+
+  { name: "Gold Leaf Gilding", cat: "wax", aliases: ["gilding", "gold leaf", "gold leafing", "metal leaf", "silver leaf"],
+    need: ["Imitation or genuine gold leaf", "Water-based gilding size (adhesive)", "Soft brushes", "Cotton gloves", "Clear sealant"],
+    steps: ["Brush a thin coat of size where you want gold.",
+      "Wait until it turns from milky to clear and tacky (15–60 minutes).",
+      "Lift the leaf with its tissue backing and lay it on the size.",
+      "Tamp it down gently with a soft brush.",
+      "Brush away the loose flakes in small circles.",
+      "Seal imitation leaf so it doesn't tarnish."],
+    note: "No breathing near loose leaf. Seriously." },
+
+  { name: "Anthotype", cat: "photo", aliases: ["anthotypes", "plant photograph", "beet print", "turmeric print", "plant print"],
+    need: ["Berries, beets, turmeric or spinach", "Mortar & pestle or blender", "A little vodka or water", "Coffee filter", "Watercolor paper", "Brush", "Glass frame", "A leaf or printed transparency"],
+    steps: ["Crush the plant matter with a little alcohol or water.",
+      "Strain through a coffee filter.",
+      "Brush 2–3 coats onto the paper, drying in the dark between coats.",
+      "Lay a leaf or positive transparency on top and clamp under glass.",
+      "Expose in direct sun — hours for turmeric, days or weeks for berries. The sun bleaches what's exposed.",
+      "Store in the dark. Anthotypes can't be fixed."],
+    note: "Make three at once with different plants and compare." },
+
+  { name: "Pinhole Camera", cat: "photo", aliases: ["pinhole", "pinhole photography", "camera obscura", "diy camera"],
+    need: ["A light-tight box or can", "Matte black paint or tape", "Aluminum (soda can) square", "Fine needle", "Black-and-white photo paper", "Darkroom chemicals (or scan the negative)", "Tape"],
+    steps: ["Paint the inside black.",
+      "Cut a 1-inch hole in the front, tape the aluminum over it, and pierce the smallest hole you can. Sand the burr.",
+      "Tape a black flap over it as a shutter.",
+      "In the dark (red safelight only), tape photo paper opposite the pinhole and close up.",
+      "Set it on something steady outside and open the shutter 30 seconds to a few minutes in sun.",
+      "Develop the paper (developer, stop, fixer), then scan and invert the negative."],
+    note: "Expect a soft, dreamy image. That's the point." },
+
+  { name: "Lumen Print", cat: "photo", aliases: ["lumen", "lumen printing", "photogram", "cameraless photography"],
+    need: ["Black-and-white photo paper (expired is fine)", "Leaves and flowers", "Glass or a contact frame", "Sun", "Photo fixer (optional)"],
+    steps: ["In dim light, arrange plants on the photo paper.",
+      "Press flat under glass.",
+      "Expose in sun from 10 minutes to several hours — pinks, purples and browns appear.",
+      "Back in dim light, remove the plants.",
+      "Scan right away (it keeps darkening), or fix it, rinse, and dry — fixing shifts the colors."],
+    note: "Juicy plants leave the wildest colors." }
+];
+
+/* ============================================================
+   Finding a card
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const STORE = "art-recipe-box:red";
+const enc = s => encodeURIComponent(s);
+
+function norm(s) {
+  return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+}
+function cleanQuery(s) {
+  return norm(s)
+    .replace(/^(how (do i|do you|to)( make| do)?|diy|make|making|recipe for|guide to|a|an|the)\s+/g, "")
+    .replace(/^(how to|make|making|diy)\s+/, "")
+    .replace(/\s+(recipe|tutorial|guide|diy|how to|technique|at home)$/g, "")
+    .trim();
+}
+const STOP = new Set(["the", "and", "with", "for", "how", "make", "diy", "art", "homemade", "own", "your"]);
+const toks = s => norm(s).split(" ").filter(t => t.length > 2 && !STOP.has(t)).map(t => t.replace(/(ies)$/, "y").replace(/s$/, ""));
+
+function score(card, q) {
+  let best = 0;
+  const qt = toks(q);
+  for (const term of [card.name, ...card.aliases]) {
+    const n = norm(term);
+    if (n === q) return 100;
+    if (n.replace(/s$/, "") === q.replace(/s$/, "")) best = Math.max(best, 95);
+    if (q.length >= 4 && n.includes(q)) best = Math.max(best, 60 + q.length / n.length * 20);
+    if (n.length >= 4 && q.includes(n)) best = Math.max(best, 55 + n.length / q.length * 25);
+    const nt = toks(term);
+    if (qt.length && nt.length) {
+      const hit = qt.filter(t => nt.includes(t)).length;
+      if (hit) best = Math.max(best, 20 + 30 * hit / Math.max(qt.length, nt.length));
+    }
+  }
+  return best;
+}
+function lookup(raw) {
+  const q = cleanQuery(raw) || norm(raw);
+  const ranked = CARDS.map(c => ({ c, s: score(c, q) })).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+  const hit = ranked[0] && ranked[0].s >= 45 ? ranked[0].c : null;
+  const also = ranked.filter(x => x.c !== hit && x.s >= 20).slice(0, 4).map(x => x.c);
+  return { q, hit, also };
+}
+
+function guideLinks(term) {
+  const t = enc(term);
+  return [
+    { label: "Step-by-step guides on Instructables", url: `https://www.instructables.com/search/?q=${t}`, main: true },
+    { label: "How-to articles on wikiHow", url: `https://www.wikihow.com/wikiHowTo?search=${t}` },
+    { label: "Video tutorials on YouTube", url: `https://www.youtube.com/results?search_query=${enc(term + " tutorial")}` },
+    { label: "The history, on Wikipedia", url: `https://en.wikipedia.org/wiki/Special:Search?search=${t}` }
+  ];
+}
+const idOf = name => norm(name).replace(/ /g, "-");
+const catName = k => (CATS.find(c => c[0] === k) || [k, "Found"])[1];
+
+/* ============================================================
+   Tiny element helper (no innerHTML with user text)
+   ============================================================ */
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid);
+  return el;
+}
+
+/* ============================================================
+   Red box storage
+   ============================================================ */
+function loadRed() { try { return JSON.parse(localStorage.getItem(STORE)) || []; } catch { return []; } }
+let red = loadRed();
+function persist() { try { localStorage.setItem(STORE, JSON.stringify(red)); } catch {} updateCount(); }
+const isSaved = id => red.some(r => r.id === id);
+function updateCount() { $("#count").textContent = red.length; }
+
+/* ============================================================
+   Rendering a card
+   ============================================================ */
+function cardData(c) {
+  return { id: idOf(c.name), name: c.name, cat: c.cat, no: CARDS.indexOf(c) + 1, yields: c.yields || "",
+    need: c.need, steps: c.steps, note: c.note, links: guideLinks(c.name) };
+}
+
+function renderCard(d, opts = {}) {
+  const saveBtn = h("button", { class: "save", type: "button" });
+  const paintSave = () => {
+    const s = isSaved(d.id);
+    saveBtn.classList.toggle("saved", s);
+    saveBtn.textContent = s ? "✓ In your red box — take it out" : "File in the red box";
+  };
+  paintSave();
+
+  const card = h("article", { class: "card result" },
+    h("div", { class: "card-head" },
+      h("h2", {}, d.name),
+      h("span", { class: "no" }, d.no ? "No. " + String(d.no).padStart(3, "0") : "No. —")),
+    h("div", { class: "meta" },
+      h("span", { class: "stamp" }, d.found ? "From the wide world" : catName(d.cat)),
+      d.yields ? h("span", { class: "no" }, "Makes: " + d.yields) : null),
+    d.desc ? h("p", { class: "desc" }, d.desc) : null,
+    d.need && d.need.length ? [h("h3", {}, "You'll need"), h("ul", { class: "materials" }, d.need.map(x => h("li", {}, x)))] : null,
+    d.steps && d.steps.length ? [h("h3", {}, "Directions"), h("ol", {}, d.steps.map(x => h("li", {}, x)))] : null,
+    d.note ? h("p", { class: "note" }, h("b", {}, "Note: "), d.note) : null,
+    h("h3", {}, d.found ? "Here's where to find the recipe" : "Find a guide"),
+    h("ul", { class: "guides" }, d.links.map(l =>
+      h("li", { class: l.main ? "main-link" : null }, h("a", { href: l.url, target: "_blank", rel: "noopener" }, l.label + " ↗")))),
+    opts.also && opts.also.length ? h("p", { class: "also", style: "margin-top:28px" }, "Also in the box: ",
+      opts.also.map((c, i) => [i ? ", " : "", h("button", { class: "chip", type: "button", onclick: () => show(c.name) }, c.name.toLowerCase())])) : null,
+    h("div", { class: "actions" },
+      saveBtn,
+      h("button", { class: "linkish", type: "button", onclick: () => window.print() }, "print card"),
+      opts.inRed ? null : h("button", { class: "linkish", type: "button", onclick: () => { $("#pulled").replaceChildren(); $("#q").focus(); } }, "put it back"))
+  );
+
+  saveBtn.addEventListener("click", () => {
+    if (isSaved(d.id)) {
+      red = red.filter(r => r.id !== d.id);
+      persist();
+      if (opts.inRed) { renderRed(); return; }
+    } else {
+      const { found, ...rest } = d;
+      red.unshift({ ...rest, found: !!found, savedAt: Date.now() });
+      persist();
+      flyToTin(card);
+    }
+    paintSave();
+    renderStrips();
+  });
+  return card;
+}
+
+/* ============================================================
+   Look something up
+   ============================================================ */
+let lookupToken = 0;
+function show(raw, { quiet = false } = {}) {
+  const { q, hit, also } = lookup(raw);
+  const pulled = $("#pulled");
+  $("#q").value = hit ? hit.name : raw;
+  if (hit) {
+    const el = renderCard(cardData(hit), { also });
+    if (quiet) el.style.animation = "none";
+    pulled.replaceChildren(el);
+  } else {
+    const name = titleCase(q || raw);
+    const d = { id: "found-" + idOf(name), name, cat: "found", found: true,
+      desc: "Not in the box yet — checking the encyclopedia…",
+      need: [], steps: [], note: "No recipe on file for this one yet — these links will get you there.",
+      links: guideLinks(name) };
+    pulled.replaceChildren(renderCard(d, { also }));
+    const token = ++lookupToken;
+    describe(name).then(text => {
+      if (token !== lookupToken) return;
+      d.desc = text || "";
+      const fresh = renderCard(d, { also });
+      fresh.style.animation = "none";
+      pulled.replaceChildren(fresh);
+    });
+  }
+  if (!quiet) pulled.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function titleCase(s) { return s.replace(/\b[a-z]/g, m => m.toUpperCase()); }
+
+async function describe(term) {
+  try {
+    const r = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&limit=1&namespace=0&format=json&origin=*&search=${enc(term)}`);
+    const [, titles] = await r.json();
+    if (!titles || !titles[0]) return "";
+    const s = await (await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${enc(titles[0].replace(/ /g, "_"))}`)).json();
+    if (s.type === "disambiguation" || !s.extract) return "";
+    const sentences = s.extract.match(/[^.!?]+[.!?]+/g) || [s.extract];
+    return sentences.slice(0, 2).join("").trim();
+  } catch { return ""; }
+}
+
+/* ============================================================
+   The box: dividers + card strips
+   ============================================================ */
+let currentCat = "paint";
+function renderTabs() {
+  const tabs = $("#tabs");
+  tabs.replaceChildren(...CATS.map(([k, label]) =>
+    h("button", { class: "tab", role: "tab", type: "button", "aria-selected": String(k === currentCat),
+      onclick: () => { currentCat = k; renderTabs(); renderStrips(); } }, label)));
+}
+function renderStrips() {
+  const list = CARDS.filter(c => c.cat === currentCat);
+  $("#boxLabel").textContent = catName(currentCat);
+  $("#strips").replaceChildren(...list.map(c =>
+    h("button", { class: "strip", type: "button", onclick: () => show(c.name) },
+      h("span", {}, c.name), h("small", {}, isSaved(idOf(c.name)) ? "♥ saved" : c.need.length + " things"))));
+}
+
+/* ============================================================
+   The red box
+   ============================================================ */
+function renderRed(openId) {
+  $("#redSub").textContent = red.length ? `${red.length} card${red.length === 1 ? "" : "s"} kept. Tap one to pull it out.` : "Directions you've kept.";
+  const view = $("#redView");
+  const strips = $("#redStrips");
+  if (!red.length) {
+    view.replaceChildren();
+    strips.replaceChildren(h("p", { class: "empty-red" }, "Empty for now. File a card and it lands here."));
+    return;
+  }
+  strips.replaceChildren(...red.map(r =>
+    h("button", { class: "strip", type: "button", onclick: () => { renderRed(r.id); $("#redView").scrollIntoView({ behavior: "smooth", block: "start" }); } },
+      h("span", {}, r.name), h("small", {}, r.found ? "links" : catName(r.cat)))));
+  const pick = red.find(r => r.id === openId);
+  view.replaceChildren(pick ? renderCard(pick, { inRed: true }) : "");
+}
+function openRed() {
+  renderRed(red[0] && red[0].id);
+  $("#overlay").hidden = false;
+  document.body.style.overflow = "hidden";
+  $("#closeRed").focus();
+}
+function closeRed() {
+  $("#overlay").hidden = true;
+  document.body.style.overflow = "";
+  renderStrips();
+  const p = $("#pulled .result");
+  if (p) { // refresh save state of the pulled card
+    const name = p.querySelector("h2").textContent;
+    show(name, { quiet: true });
+  }
+  $("#tin").focus();
+}
+
+function flyToTin(card) {
+  const tin = $("#tin");
+  const from = card.getBoundingClientRect();
+  const to = tin.getBoundingClientRect();
+  const done = () => { tin.classList.remove("bump"); void tin.offsetWidth; tin.classList.add("bump"); };
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || !document.body.animate) return done();
+  const w = Math.min(from.width, 320), hgt = w * 0.6;
+  const fly = h("div", { class: "flyer" });
+  Object.assign(fly.style, { left: from.left + (from.width - w) / 2 + "px", top: Math.max(from.top, 20) + "px", width: w + "px", height: hgt + "px" });
+  fly.style.background = getComputedStyle(card).background;
+  document.body.append(fly);
+  const dx = to.left + to.width / 2 - (parseFloat(fly.style.left) + w / 2);
+  const dy = to.top + 20 - (parseFloat(fly.style.top) + hgt / 2);
+  fly.animate([
+    { transform: "translate(0,0) scale(1) rotate(0)", opacity: 1 },
+    { transform: `translate(${dx * .5}px, ${dy * .3 - 80}px) scale(.6) rotate(-8deg)`, opacity: 1, offset: .5 },
+    { transform: `translate(${dx}px, ${dy}px) scale(.15) rotate(4deg)`, opacity: .4 }
+  ], { duration: 650, easing: "cubic-bezier(.5,0,.6,1)" }).onfinish = () => { fly.remove(); done(); };
+}
+
+/* ============================================================
+   Wire it up
+   ============================================================ */
+$("#askForm").addEventListener("submit", e => { e.preventDefault(); const v = $("#q").value.trim(); if (v) show(v); });
+document.querySelectorAll(".try .chip").forEach(b => b.addEventListener("click", () => {
+  show(b.hasAttribute("data-random") ? CARDS[Math.floor(Math.random() * CARDS.length)].name : b.textContent);
+}));
+$("#tin").addEventListener("click", openRed);
+$("#closeRed").addEventListener("click", closeRed);
+$("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") closeRed(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#overlay").hidden) closeRed(); });
+
+renderTabs();
+renderStrips();
+updateCount();
+</script>
+</body>
+</html>
